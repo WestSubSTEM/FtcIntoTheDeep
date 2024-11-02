@@ -2,7 +2,12 @@ package org.firstinspires.ftc.teamcode;
 
 import com.arcrobotics.ftclib.command.button.GamepadButton;
 import com.arcrobotics.ftclib.drivebase.MecanumDrive;
+import com.arcrobotics.ftclib.gamepad.ButtonReader;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
+import com.arcrobotics.ftclib.gamepad.GamepadKeys;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.arcrobotics.ftclib.hardware.motors.Motor;
 import com.arcrobotics.ftclib.hardware.motors.MotorEx;
@@ -10,23 +15,29 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.MotionDetection;
+
 @TeleOp(name="Tele Meet 1", group="FTC Lib")
 public class TeleMeet1 extends OpMode
 {
     GoBildaPinpointDriver odo; // Declare OpMode member for the Odometry Computer
 
     double oldTime = 0;
+    int bucketVerticalPosition = 0;
 
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
-    MotorEx hMotor, vMotor;
+    DcMotor hMotor, vMotor;
     // input motors exactly as shown below
     MecanumDrive mecanum;
     GamepadEx gpA, gpB;
     GamepadButton leftBumper, rightBumper;
 
-    Servo servoBucket, servoLED;
+    Servo bucketServo, ledServo, armServo, intakeServo;
 
+    ButtonReader square2ButtonReader, triangle2ButtonReader, circle2ButtonReader, x2ButtonReader, dUp2ButtonReader, dDown2ButtonReader, dLeft2ButtonReader, dRight2ButtonReader;
+
+    double armServoPosition = STEMperFiConstants.ARM_INIT;
     /*
      * Code to run ONCE when the driver hits INIT
      */
@@ -36,10 +47,24 @@ public class TeleMeet1 extends OpMode
         gpA = new GamepadEx(gamepad1);
         gpB = new GamepadEx(gamepad2);
 
-        servoBucket = hardwareMap.get(Servo.class, "bucket");
-        servoBucket.setPosition(STEMperFiConstants.BUCKET_INIT);
-        servoLED = hardwareMap.get(Servo.class, "gbled");
-        servoLED.setPosition(STEMperFiConstants.GB_LED_VIOLET);
+        square2ButtonReader = new ButtonReader(gpB, GamepadKeys.Button.X);
+        triangle2ButtonReader = new ButtonReader(gpB, GamepadKeys.Button.Y);
+        x2ButtonReader = new ButtonReader(gpB, GamepadKeys.Button.A);
+        circle2ButtonReader = new ButtonReader(gpB, GamepadKeys.Button.B);
+
+        dDown2ButtonReader = new ButtonReader(gpB, GamepadKeys.Button.DPAD_DOWN);
+        dUp2ButtonReader = new ButtonReader(gpB, GamepadKeys.Button.DPAD_UP);
+        dLeft2ButtonReader = new ButtonReader(gpB, GamepadKeys.Button.DPAD_LEFT);
+        dRight2ButtonReader = new ButtonReader(gpB, GamepadKeys.Button.DPAD_RIGHT);
+
+        bucketServo = hardwareMap.get(Servo.class, "bucket");
+        bucketServo.setPosition(STEMperFiConstants.BUCKET_INIT);
+        ledServo = hardwareMap.get(Servo.class, "gbled");
+        ledServo.setPosition(STEMperFiConstants.GB_LED_VIOLET);
+        armServo = hardwareMap.get(Servo.class, "arm");
+        armServo.setPosition(armServoPosition);
+        intakeServo = hardwareMap.get(Servo.class, "intake");
+        intakeServo.setPosition(STEMperFiConstants.INTAKE_OFF);
 
         Motor frontLeft = new Motor(hardwareMap, "fl", Motor.GoBILDA.RPM_312);
         Motor frontRight = new Motor(hardwareMap, "fr", Motor.GoBILDA.RPM_312);
@@ -48,15 +73,18 @@ public class TeleMeet1 extends OpMode
 
         mecanum = new MecanumDrive(backRight, backLeft , frontRight, frontLeft);
 
-        hMotor = new MotorEx(hardwareMap, "h", Motor.GoBILDA.RPM_117);
-        hMotor.setInverted(true);
-        hMotor.encoder.reset();
-        hMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
+        hMotor = hardwareMap.get(DcMotor.class, "h");
+        hMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        hMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        hMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        vMotor = new MotorEx(hardwareMap, "v", Motor.GoBILDA.RPM_60);
-        vMotor.setInverted(true);
-        vMotor.encoder.reset();
-        vMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
+        vMotor = hardwareMap.get(DcMotor.class, "v");
+        vMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        vMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        vMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        vMotor.setTargetPosition(0);
+        vMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        vMotor.setPower(1);
 
         odo = hardwareMap.get(GoBildaPinpointDriver.class,"odo");
 
@@ -133,20 +161,71 @@ public class TeleMeet1 extends OpMode
         );
 
         // Gamepad 2
+        x2ButtonReader.readValue();
+        circle2ButtonReader.readValue();
+        square2ButtonReader.readValue();
+        triangle2ButtonReader.readValue();
+
+        dUp2ButtonReader.readValue();
+        dDown2ButtonReader.readValue();
+        dLeft2ButtonReader.readValue();
+        dRight2ButtonReader.readValue();
+
+        if (square2ButtonReader.wasJustPressed()) {
+            armServoPosition = STEMperFiConstants.ARM_INTAKE;
+            ledServo.setPosition(STEMperFiConstants.GB_LED_RED);
+        } else if (triangle2ButtonReader.wasJustPressed()) {
+            armServoPosition = STEMperFiConstants.ARM_SCORE;
+        } else if (circle2ButtonReader.wasJustPressed()) {
+            armServoPosition = STEMperFiConstants.ARM_DRIVE;
+            ledServo.setPosition(STEMperFiConstants.GB_LED_GREEN);
+        } else if (x2ButtonReader.wasJustPressed()) {
+            armServoPosition = STEMperFiConstants.ARM_WALL;
+            ledServo.setPosition(STEMperFiConstants.GB_LED_ORANGE);
+        }
+        armServo.setPosition(armServoPosition);
+
         if (gamepad2.right_bumper || gamepad2.left_bumper) {
-            servoBucket.setPosition(STEMperFiConstants.BUCKET_SCORE);
+            bucketServo.setPosition(STEMperFiConstants.BUCKET_SCORE);
         } else {
-            servoBucket.setPosition(STEMperFiConstants.BUCKET_INTAKE);
+            bucketServo.setPosition(STEMperFiConstants.BUCKET_INTAKE);
         }
-        if (gamepad2.right_trigger > 0.1) {
-
-        } else if (gamepad2.left_trigger > 0.1) {
-
-        } else {
-
+        double intakePower = STEMperFiConstants.INTAKE_OFF;
+        double leftTrigger = gpB.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER);
+        double rightTrigger = gpB.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER);
+        if (rightTrigger > 0.1) {
+            intakePower = intakePower + STEMperFiConstants.INTAKE_IN * rightTrigger;
+        } else if (leftTrigger > 0.1) {
+            intakePower = intakePower + STEMperFiConstants.INTAKE_OUT * leftTrigger;
         }
+        intakeServo.setPosition(intakePower);
 
-
+        double gp2LY = gpB.getLeftY();
+        int vTargetDiff = vMotor.getCurrentPosition() - vMotor.getTargetPosition();
+        if (gpB.getGamepadButton(GamepadKeys.Button.LEFT_STICK_BUTTON).get()) {
+            vMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            bucketVerticalPosition = 0;
+        } else if (dDown2ButtonReader.wasJustPressed()) {
+            bucketVerticalPosition = 0;
+            vMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        } else if (dUp2ButtonReader.wasJustPressed()) {
+            vMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            if (bucketVerticalPosition == STEMperFiConstants.SCORE_BUCKET_FIRST) {
+                bucketVerticalPosition = STEMperFiConstants.SCORE_BUCKET_SECOND;
+            } else {
+                bucketVerticalPosition = STEMperFiConstants.SCORE_BUCKET_FIRST;
+            }
+        } else if (Math.abs(gp2LY) > 0.1 && Math.abs(vTargetDiff) < 100) {
+            vMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            bucketVerticalPosition += Math.round(gp2LY * 100);
+            bucketVerticalPosition = Math.max(-50, bucketVerticalPosition);
+        }
+        vMotor.setTargetPosition(bucketVerticalPosition);
+        vMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        vMotor.setPower(1);
+        if (bucketVerticalPosition == 0 && vTargetDiff < 50) {
+            vMotor.setPower(0);
+        }
 
 //        telemetry.addData("Left X", lx);
 //        telemetry.addData("Left Y", ly);
@@ -154,19 +233,29 @@ public class TeleMeet1 extends OpMode
 //        telemetry.addData("HR:", odo.getHeading());
 //        telemetry.addData("Heading: ", degrees);
 
-        double gp2LY = gpB.getLeftY();
-        double gp2RX = gpB.getRightX();
 
+        double gp2RY = -gpB.getRightY();
+        if (dRight2ButtonReader.wasJustPressed()) {
+            hMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            hMotor.setTargetPosition(STEMperFiConstants.H_SCORE);
+            hMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            hMotor.setPower(1);
+        } else {
+            if (hMotor.getMode() != DcMotor.RunMode.RUN_TO_POSITION || (Math.abs(gp2RY) > 0.1)) {
+                hMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                hMotor.setPower(gp2RY);
+            }
+        }
         telemetry.addData("v", gp2LY);
-        telemetry.addData("vMotor.encoder.getPosition()", vMotor.encoder.getPosition());
-        telemetry.addData("vMotor.encoder.getDistance()", vMotor.encoder.getDistance());
-        vMotor.set(gp2LY);
-        telemetry.addData("h", gp2RX);
+        telemetry.addData("targetPosition", bucketVerticalPosition);
+        telemetry.addData("vMotor.getTargetPosition)", vMotor.getTargetPosition());
+        telemetry.addData("vMotor.getCurrentPosition()", vMotor.getCurrentPosition());
+
+        //vMotor.set(gp2LY);
+        telemetry.addData("h", gp2RY);
         telemetry.addData("hMotor.getCurrentPosition()", hMotor.getCurrentPosition());
-        telemetry.addData("hMotor.getDistance()", hMotor.getDistance());
-        telemetry.addData("hMotor.encoder.getPosition()", hMotor.encoder.getPosition());
-        telemetry.addData("hMotor.getDistance()", hMotor.encoder.getDistance());
-        hMotor.set(gp2RX);
+        telemetry.addData("hMotor.getTargetPosition)", hMotor.getTargetPosition());
+
     }
 
     /*

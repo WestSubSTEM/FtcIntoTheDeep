@@ -26,24 +26,32 @@ public class STEMperFiConstants {
 
     public static final double BUCKET_INIT = 0.85;
     public static final double BUCKET_INTAKE = 0.77;
-    public static final double BUCKET_SCORE = 0.5;
+    public static final double BUCKET_SCORE = 0.45;
 
-    public static final double ARM_INIT = 0.82;
-    public static final double ARM_PICK_UP = 0.15;
-    public static final double ARM_DROP = 0.91;
-    public static final double ARM_DRIVE = 0.75;
-    public static final double ARM_WALL = 0.38;
+    public static final double ARM_INTAKE = 0.05;
+    public static final double ARM_SCORE = 0.87;
+    public static final double ARM_DRIVE = 0.63;
+    public static final double ARM_WALL = 0.35;
+    public static final double ARM_INIT = 0.76;
 
     public static final double GB_LED_OFF = 0;
-    public static final double GB_LED_RED = 0.277;
+    public static final double GB_LED_RED = 0.28;
     public static final double GB_LED_ORANGE = 0.333;
-    public static final double GB_LED_YELLOW = 0.333;
-    public static final double GB_LED_SAGE = 0.333;
-    public static final double GB_LED_GREEN = 0.333;
+    public static final double GB_LED_YELLOW = 0.388;
+    public static final double GB_LED_SAGE = 0.444;
+    public static final double GB_LED_GREEN = 0.5;
     public static final double GB_LED_AZURE = 0.555;
     public static final double GB_LED_BLUE = 0.611;
     public static final double GB_LED_INDIGO = 0.666;
     public static final double GB_LED_VIOLET = 0.722;
     public static final double GB_LED_WHITE = 1.0;
 
+    public static final double INTAKE_OFF = 0.5;
+    public static final double INTAKE_IN = -0.5;
+    public static final double INTAKE_OUT = 0.5;
+
+    public static final int SCORE_BUCKET_FIRST = 1864;
+    public static final int SCORE_BUCKET_SECOND = 3100;
+
+    public static final int H_SCORE = 647;
 }
