@@ -29,9 +29,9 @@ public class STEMperFiConstants {
     public static final double BUCKET_SCORE = 0.58;
 
     public static final double ARM_AIM = 0.5;
-    public static final double ARM_INTAKE = 0.5;
+    public static final double ARM_INTAKE = 0.52;
     public static final double ARM_SCORE = 0.3;
-    public static final double ARM_DRIVE = 0.52;
+    public static final double ARM_DRIVE = 0.4;
     public static final double ARM_WALL = 0.4;
     public static final double ARM_INIT = 0.33;
 
@@ -61,4 +61,5 @@ public class STEMperFiConstants {
 
     public static final long ATTACK_PINCHER_CLOSE_ms = 500;
     public static final long ATTACK_DRIVE_ms = 1_000;
+    public static final long LIFT_DELAY_MS = 500;
 }

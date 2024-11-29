@@ -30,11 +30,12 @@ public class TeleMeet1 extends OpMode
     GamepadButton leftBumper, rightBumper;
 
     long attackStartTime =  0;
+    long liftStartTime = 0;
 
     Servo bucketServo, ledServo, armServo, pincherServo;
     double pincherPosition = STEMperFiConstants.PINCHER_OPEN;
 
-    ButtonReader square2ButtonReader, triangle2ButtonReader, circle2ButtonReader, x2ButtonReader, dUp2ButtonReader, dDown2ButtonReader, dLeft2ButtonReader, dRight2ButtonReader, rightStick2ButtonReader;
+    ButtonReader square2ButtonReader, triangle2ButtonReader, circle2ButtonReader, x2ButtonReader, dUp2ButtonReader, dDown2ButtonReader, dLeft2ButtonReader, dRight2ButtonReader, leftStick2ButtonReader, rightStick2ButtonReader;
 
     double armServoPosition = STEMperFiConstants.ARM_INIT;
     /*
@@ -56,9 +57,10 @@ public class TeleMeet1 extends OpMode
         dLeft2ButtonReader = new ButtonReader(gpB, GamepadKeys.Button.DPAD_LEFT);
         dRight2ButtonReader = new ButtonReader(gpB, GamepadKeys.Button.DPAD_RIGHT);
         rightStick2ButtonReader = new ButtonReader(gpB, GamepadKeys.Button.RIGHT_STICK_BUTTON);
+        leftStick2ButtonReader = new ButtonReader(gpB, GamepadKeys.Button.LEFT_STICK_BUTTON);
 
         bucketServo = hardwareMap.get(Servo.class, "bucket");
-        bucketServo.setPosition(STEMperFiConstants.BUCKET_INIT);
+        bucketServo.setPosition(STEMperFiConstants.BUCKET_INTAKE);
         ledServo = hardwareMap.get(Servo.class, "gbled");
         ledServo.setPosition(STEMperFiConstants.GB_LED_VIOLET);
         armServo = hardwareMap.get(Servo.class, "arm");
@@ -175,11 +177,13 @@ public class TeleMeet1 extends OpMode
         dDown2ButtonReader.readValue();
         dLeft2ButtonReader.readValue();
         dRight2ButtonReader.readValue();
+        rightStick2ButtonReader.readValue();
+        leftStick2ButtonReader.readValue();
 
         if (triangle2ButtonReader.wasJustPressed()) {
             attackStartTime = 0;
             pincherPosition = STEMperFiConstants.PINCHER_OPEN;
-            armServoPosition = STEMperFiConstants.ARM_INTAKE;
+            armServoPosition = STEMperFiConstants.ARM_AIM;
             ledServo.setPosition(STEMperFiConstants.GB_LED_RED);
         } else if (x2ButtonReader.wasJustPressed()) {
             attackStartTime = 0;
@@ -205,31 +209,31 @@ public class TeleMeet1 extends OpMode
                 armServoPosition = STEMperFiConstants.ARM_DRIVE;
                 ledServo.setPosition(STEMperFiConstants.GB_LED_ORANGE);
                 armServo.setPosition(armServoPosition);
-            } else if ( attackDuration > STEMperFiConstants.PINCHER_CLOSE ) {
+            } else if ( attackDuration > STEMperFiConstants.ATTACK_PINCHER_CLOSE_ms ) {
                 pincherPosition = STEMperFiConstants.PINCHER_CLOSE;
                 armServo.setPosition(armServoPosition);
             }
         }
 
-        if (gamepad2.right_bumper || gamepad2.left_bumper) {
+        if (gamepad2.left_bumper && attackStartTime == 0) {
+            pincherPosition = STEMperFiConstants.PINCHER_OPEN;
+        } else if (gamepad2.right_bumper) {
+            pincherPosition = STEMperFiConstants.PINCHER_CLOSE;
+        }
+        pincherServo.setPosition(pincherPosition);
+
+
+        double leftTrigger = gpB.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER);
+        double rightTrigger = gpB.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER);
+        if (rightTrigger > 0.1 || leftTrigger > 0.1) {
             bucketServo.setPosition(STEMperFiConstants.BUCKET_SCORE);
         } else {
             bucketServo.setPosition(STEMperFiConstants.BUCKET_INTAKE);
         }
 
-
-        double leftTrigger = gpB.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER);
-        double rightTrigger = gpB.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER);
-        if (rightTrigger > 0.1) {
-            pincherPosition = STEMperFiConstants.PINCHER_CLOSE;
-        } else if (leftTrigger > 0.1 && attackStartTime == 0) {
-            pincherPosition = STEMperFiConstants.PINCHER_OPEN;
-        }
-        pincherServo.setPosition(pincherPosition);
-
         double gp2LY = gpB.getLeftY();
         int vTargetDiff = vMotor.getCurrentPosition() - vMotor.getTargetPosition();
-        if (gpB.getGamepadButton(GamepadKeys.Button.LEFT_STICK_BUTTON).get()) {
+        if (leftStick2ButtonReader.wasJustPressed()) {
             vMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             bucketVerticalPosition = 0;
         } else if (dDown2ButtonReader.wasJustPressed()) {
@@ -242,6 +246,7 @@ public class TeleMeet1 extends OpMode
             if (bucketVerticalPosition == STEMperFiConstants.SCORE_BUCKET_FIRST) {
                 bucketVerticalPosition = STEMperFiConstants.SCORE_BUCKET_SECOND;
             } else {
+                liftStartTime = System.currentTimeMillis();
                 bucketVerticalPosition = STEMperFiConstants.SCORE_BUCKET_FIRST;
             }
         } else if (Math.abs(gp2LY) > 0.1 && Math.abs(vTargetDiff) < 100) {
@@ -249,9 +254,11 @@ public class TeleMeet1 extends OpMode
             bucketVerticalPosition += Math.round(gp2LY * 100);
             bucketVerticalPosition = Math.max(-50, bucketVerticalPosition);
         }
-        vMotor.setTargetPosition(bucketVerticalPosition);
-        vMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        vMotor.setPower(1);
+        if (System.currentTimeMillis() - liftStartTime > STEMperFiConstants.LIFT_DELAY_MS) {
+            vMotor.setTargetPosition(bucketVerticalPosition);
+            vMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            vMotor.setPower(1);
+        }
         if (bucketVerticalPosition == 0 && vTargetDiff < 50) {
             vMotor.setPower(0);
         }
