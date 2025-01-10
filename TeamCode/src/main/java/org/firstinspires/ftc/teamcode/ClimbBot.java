@@ -32,12 +32,11 @@ package org.firstinspires.ftc.teamcode;
 import com.arcrobotics.ftclib.command.button.GamepadButton;
 import com.arcrobotics.ftclib.drivebase.MecanumDrive;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
+import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.arcrobotics.ftclib.hardware.motors.Motor;
-import com.arcrobotics.ftclib.hardware.motors.MotorEx;
-import com.qualcomm.hardware.sparkfun.SparkFunLEDStick;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -55,8 +54,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list
  */
 
-@TeleOp(name="Drive", group="FTC Lib")
-public class BumpBot extends OpMode
+@TeleOp(name="Climb", group="FTC Lib")
+public class ClimbBot extends OpMode
 {
     //GoBildaPinpointDriver odo; // Declare OpMode member for the Odometry Computer
 
@@ -69,6 +68,7 @@ public class BumpBot extends OpMode
     MecanumDrive mecanum;
     GamepadEx gpA, gpB;
     GamepadButton leftBumper, rightBumper;
+    DcMotor vMotor, llMotor, lrMotor;
     //SparkFunLEDStick led;
     //RevIMU imu;
     /*
@@ -103,6 +103,23 @@ public class BumpBot extends OpMode
         Motor backLeft = new Motor(hardwareMap, "bl", Motor.GoBILDA.RPM_312);
         Motor backRight = new Motor(hardwareMap, "br", Motor.GoBILDA.RPM_312);
 
+        vMotor = hardwareMap.get(DcMotor.class, "v");
+        vMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        vMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        vMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+
+        llMotor = hardwareMap.get(DcMotor.class, "ll");
+        llMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        llMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        llMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        llMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        lrMotor = hardwareMap.get(DcMotor.class, "lr");
+        lrMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        lrMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        lrMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        lrMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
        // mecanum = new MecanumDrive(frontLeft, frontRight, backLeft, backRight);
         mecanum = new MecanumDrive(backRight, backLeft , frontRight, frontLeft);
@@ -217,6 +234,35 @@ public class BumpBot extends OpMode
         telemetry.addData("Left Y", ly);
         telemetry.addData("Right X", rx);
         telemetry.addData("Raw X", gamepad1.right_stick_x);
+
+        double lyGpb = 0;
+        double ryGpb = 0;
+
+        if (gpB.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0) {
+            lyGpb = gpB.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER);
+            ryGpb = lyGpb;
+        } else if (gpB.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0) {
+            lyGpb = -gpB.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER);
+            ryGpb = lyGpb;
+        } else {
+            lyGpb = gamepad2.left_stick_y;
+            ryGpb = gamepad2.right_stick_y;
+        }
+
+        lyGpb = Math.abs(lyGpb) > 0.1 ? lyGpb : 0;
+        ryGpb = Math.abs(ryGpb) > 0.1 ? ryGpb : 0;
+
+        lrMotor.setPower(ryGpb);
+        llMotor.setPower(lyGpb);
+
+        telemetry.addData("Climb R Power:", ryGpb);
+        telemetry.addData("Climb L Power:", lyGpb);
+
+        telemetry.addData("Climb R Pos: ", lrMotor.getCurrentPosition());
+        telemetry.addData("Climb L Pos: ", llMotor.getCurrentPosition());
+
+
+
 
        // telemetry.addData("HR:", odo.getHeading());
       //  telemetry.addData("Heading: ", degrees);

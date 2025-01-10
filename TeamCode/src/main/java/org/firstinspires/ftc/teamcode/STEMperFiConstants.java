@@ -24,16 +24,16 @@ public class STEMperFiConstants {
         INTAKE_PREP
     };
 
-    public static final double BUCKET_INIT = 0.66;
+    public static final double BUCKET_INIT = 0.7;
     public static final double BUCKET_INTAKE = 0.62;
     public static final double BUCKET_SCORE = 0.58;
 
     public static final double ARM_AIM = 0.5;
     public static final double ARM_INTAKE = 0.52;
-    public static final double ARM_SCORE = 0.3;
+    public static final double ARM_SCORE = 0.29;
     public static final double ARM_DRIVE = 0.4;
     public static final double ARM_WALL = 0.4;
-    public static final double ARM_INIT = 0.33;
+    public static final double ARM_INIT = 0.31;
 
     public static final double PINCHER_CLOSE = 0.95;
     public static final double PINCHER_OPEN = 0.5;
@@ -56,6 +56,7 @@ public class STEMperFiConstants {
 
     public static final int SCORE_BUCKET_FIRST = 1864;
     public static final int SCORE_BUCKET_SECOND = 3100;
+    public static final int SCORE_BUCKET_SPECIMEN = 1417;
 
     public static final int H_SCORE = 171;
 

@@ -27,13 +27,14 @@ public class TeleMeet1 extends OpMode
     // input motors exactly as shown below
     MecanumDrive mecanum;
     GamepadEx gpA, gpB;
-    GamepadButton leftBumper, rightBumper;
 
     long attackStartTime =  0;
     long liftStartTime = 0;
 
     Servo bucketServo, ledServo, armServo, pincherServo;
     double pincherPosition = STEMperFiConstants.PINCHER_OPEN;
+
+    boolean iSpecimenMode = false;
 
     ButtonReader square2ButtonReader, triangle2ButtonReader, circle2ButtonReader, x2ButtonReader, dUp2ButtonReader, dDown2ButtonReader, dLeft2ButtonReader, dRight2ButtonReader, leftStick2ButtonReader, rightStick2ButtonReader;
 
@@ -60,9 +61,9 @@ public class TeleMeet1 extends OpMode
         leftStick2ButtonReader = new ButtonReader(gpB, GamepadKeys.Button.LEFT_STICK_BUTTON);
 
         bucketServo = hardwareMap.get(Servo.class, "bucket");
-        bucketServo.setPosition(STEMperFiConstants.BUCKET_INTAKE);
+        bucketServo.setPosition(STEMperFiConstants.BUCKET_INIT);
         ledServo = hardwareMap.get(Servo.class, "gbled");
-        ledServo.setPosition(STEMperFiConstants.GB_LED_VIOLET);
+        ledServo.setPosition(STEMperFiConstants.GB_LED_WHITE);
         armServo = hardwareMap.get(Servo.class, "arm");
         armServo.setPosition(armServoPosition);
         pincherServo = hardwareMap.get(Servo.class, "intake");
@@ -180,26 +181,66 @@ public class TeleMeet1 extends OpMode
         rightStick2ButtonReader.readValue();
         leftStick2ButtonReader.readValue();
 
-        if (triangle2ButtonReader.wasJustPressed()) {
-            attackStartTime = 0;
-            pincherPosition = STEMperFiConstants.PINCHER_OPEN;
-            armServoPosition = STEMperFiConstants.ARM_AIM;
-            ledServo.setPosition(STEMperFiConstants.GB_LED_RED);
-        } else if (x2ButtonReader.wasJustPressed()) {
-            attackStartTime = 0;
-            armServoPosition = STEMperFiConstants.ARM_SCORE;
-            hMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            hMotor.setTargetPosition(STEMperFiConstants.H_SCORE);
-            hMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            hMotor.setPower(1);
-        } else if (circle2ButtonReader.wasJustPressed()) {
-            attackStartTime = System.currentTimeMillis();
-            armServoPosition = STEMperFiConstants.ARM_INTAKE;
-            ledServo.setPosition(STEMperFiConstants.GB_LED_GREEN);
-        } else if (square2ButtonReader.wasJustPressed()) {
-            attackStartTime = 0;
-            armServoPosition = STEMperFiConstants.ARM_DRIVE;
-            ledServo.setPosition(STEMperFiConstants.GB_LED_ORANGE);
+        if (dRight2ButtonReader.wasJustPressed()) {
+            this.iSpecimenMode = !this.iSpecimenMode;
+            if (this.iSpecimenMode) {
+                pincherPosition = STEMperFiConstants.PINCHER_CLOSE;
+                armServoPosition = STEMperFiConstants.ARM_INIT;
+                bucketServo.setPosition(STEMperFiConstants.BUCKET_INIT);
+                ledServo.setPosition(STEMperFiConstants.GB_LED_INDIGO);
+                hMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+                hMotor.setTargetPosition(STEMperFiConstants.H_SCORE);
+                hMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                hMotor.setPower(1);
+            } else {
+                ledServo.setPosition(STEMperFiConstants.GB_LED_OFF);
+            }
+        }
+
+        if (iSpecimenMode) {
+            if (triangle2ButtonReader.wasJustPressed()) {
+                attackStartTime = 0;
+                pincherPosition = STEMperFiConstants.PINCHER_OPEN;
+                armServoPosition = STEMperFiConstants.ARM_AIM;
+                ledServo.setPosition(STEMperFiConstants.GB_LED_RED);
+            } else if (x2ButtonReader.wasJustPressed()) {
+                attackStartTime = 0;
+                armServoPosition = STEMperFiConstants.ARM_DRIVE;
+                hMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+                hMotor.setTargetPosition(STEMperFiConstants.H_SCORE);
+                hMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                hMotor.setPower(1);
+            } else if (circle2ButtonReader.wasJustPressed()) {
+                attackStartTime = System.currentTimeMillis();
+                armServoPosition = STEMperFiConstants.ARM_INTAKE;
+                ledServo.setPosition(STEMperFiConstants.GB_LED_GREEN);
+            } else if (square2ButtonReader.wasJustPressed()) {
+                attackStartTime = 0;
+                armServoPosition = STEMperFiConstants.ARM_DRIVE;
+                ledServo.setPosition(STEMperFiConstants.GB_LED_ORANGE);
+            }
+        } else {
+            if (triangle2ButtonReader.wasJustPressed()) {
+                attackStartTime = 0;
+                pincherPosition = STEMperFiConstants.PINCHER_OPEN;
+                armServoPosition = STEMperFiConstants.ARM_AIM;
+                ledServo.setPosition(STEMperFiConstants.GB_LED_RED);
+            } else if (x2ButtonReader.wasJustPressed()) {
+                attackStartTime = 0;
+                armServoPosition = STEMperFiConstants.ARM_SCORE;
+                hMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+                hMotor.setTargetPosition(STEMperFiConstants.H_SCORE);
+                hMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                hMotor.setPower(1);
+            } else if (circle2ButtonReader.wasJustPressed()) {
+                attackStartTime = System.currentTimeMillis();
+                armServoPosition = STEMperFiConstants.ARM_INTAKE;
+                ledServo.setPosition(STEMperFiConstants.GB_LED_GREEN);
+            } else if (square2ButtonReader.wasJustPressed()) {
+                attackStartTime = 0;
+                armServoPosition = STEMperFiConstants.ARM_DRIVE;
+                ledServo.setPosition(STEMperFiConstants.GB_LED_ORANGE);
+            }
         }
         armServo.setPosition(armServoPosition);
         if (attackStartTime > 0) {
@@ -209,7 +250,7 @@ public class TeleMeet1 extends OpMode
                 armServoPosition = STEMperFiConstants.ARM_DRIVE;
                 ledServo.setPosition(STEMperFiConstants.GB_LED_ORANGE);
                 armServo.setPosition(armServoPosition);
-            } else if ( attackDuration > STEMperFiConstants.ATTACK_PINCHER_CLOSE_ms ) {
+            } else if (attackDuration > STEMperFiConstants.ATTACK_PINCHER_CLOSE_ms) {
                 pincherPosition = STEMperFiConstants.PINCHER_CLOSE;
                 armServo.setPosition(armServoPosition);
             }
@@ -223,12 +264,14 @@ public class TeleMeet1 extends OpMode
         pincherServo.setPosition(pincherPosition);
 
 
+        if (!this.iSpecimenMode) {
         double leftTrigger = gpB.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER);
         double rightTrigger = gpB.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER);
         if (rightTrigger > 0.1 || leftTrigger > 0.1) {
             bucketServo.setPosition(STEMperFiConstants.BUCKET_SCORE);
         } else {
             bucketServo.setPosition(STEMperFiConstants.BUCKET_INTAKE);
+        }
         }
 
         double gp2LY = gpB.getLeftY();
@@ -247,7 +290,7 @@ public class TeleMeet1 extends OpMode
                 bucketVerticalPosition = STEMperFiConstants.SCORE_BUCKET_SECOND;
             } else {
                 liftStartTime = System.currentTimeMillis();
-                bucketVerticalPosition = STEMperFiConstants.SCORE_BUCKET_FIRST;
+                bucketVerticalPosition = iSpecimenMode ? STEMperFiConstants.SCORE_BUCKET_SPECIMEN : STEMperFiConstants.SCORE_BUCKET_FIRST;
             }
         } else if (Math.abs(gp2LY) > 0.1 && Math.abs(vTargetDiff) < 100) {
             vMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);

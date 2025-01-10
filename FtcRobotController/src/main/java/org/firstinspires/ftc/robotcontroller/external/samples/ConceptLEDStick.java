@@ -71,7 +71,7 @@ public class ConceptLEDStick extends OpMode {
 
     @Override
     public void init() {
-        ledStick = hardwareMap.get(SparkFunLEDStick.class, "back_leds");
+        ledStick = hardwareMap.get(SparkFunLEDStick.class, "led");
         ledStick.setBrightness(brightness);
         ledStick.setColor(Color.GREEN);
     }
