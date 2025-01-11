@@ -7,16 +7,19 @@ import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.arcrobotics.ftclib.hardware.motors.Motor;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-@TeleOp(name="Tele Meet 2", group="FTC Lib")
+@TeleOp(name="Tele Meet 3", group="FTC Lib")
 public class TeleMeet1 extends OpMode
 {
     GoBildaPinpointDriver odo; // Declare OpMode member for the Odometry Computer
+
+    Gamepad.RumbleEffect customRumbleEffect;    // Use to build a custom rumble sequence.
 
     double oldTime = 0;
     int bucketVerticalPosition = 0;
@@ -30,6 +33,7 @@ public class TeleMeet1 extends OpMode
 
     long attackStartTime =  0;
     long liftStartTime = 0;
+    long odoResetTime = 0;
 
     Servo bucketServo, ledServo, armServo, pincherServo;
     double pincherPosition = STEMperFiConstants.PINCHER_OPEN;
@@ -44,6 +48,11 @@ public class TeleMeet1 extends OpMode
      */
     @Override
     public void init() {
+
+        customRumbleEffect = new Gamepad.RumbleEffect.Builder()
+                .addStep(1.0, 1.0, 500)  //  Rumble left motor 100% for 250 mSec
+                .build();
+
         // the extended gamepad object
         gpA = new GamepadEx(gamepad1);
         gpB = new GamepadEx(gamepad2);
@@ -114,7 +123,7 @@ public class TeleMeet1 extends OpMode
         increase when you move the robot forward. And the Y (strafe) pod should increase when
         you move the robot to the left.
          */
-        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
+        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
 
         /*
         Before running the robot, recalibrate the IMU. This needs to happen when the robot is stationary
@@ -124,7 +133,7 @@ public class TeleMeet1 extends OpMode
         This is recommended before you run your autonomous, as a bad initial calibration can cause
         an incorrect starting value for x, y, and heading.
          */
-        //odo.recalibrateIMU();
+        odo.recalibrateIMU();
         odo.resetPosAndIMU();
     }
 
@@ -168,6 +177,18 @@ public class TeleMeet1 extends OpMode
                 false
         );
 
+        // Gamepad 1
+        if (gamepad1.right_trigger > .9 && gamepad1.left_trigger > .9) {
+            long now = System.currentTimeMillis();
+            if (now - odoResetTime > 1_000) {
+                odo.resetPosAndIMU();
+                odoResetTime = now;
+                gamepad1.runRumbleEffect(customRumbleEffect);
+
+                ledServo.setPosition(STEMperFiConstants.GB_LED_YELLOW);
+            }
+        }
+
         // Gamepad 2
         x2ButtonReader.readValue();
         circle2ButtonReader.readValue();
@@ -203,7 +224,7 @@ public class TeleMeet1 extends OpMode
                 pincherPosition = STEMperFiConstants.PINCHER_OPEN;
                 armServoPosition = STEMperFiConstants.ARM_AIM;
                 ledServo.setPosition(STEMperFiConstants.GB_LED_RED);
-            } else if (x2ButtonReader.wasJustPressed()) {
+            } else if (x2ButtonReader.wasJustPressed() || dLeft2ButtonReader.wasJustPressed()) {
                 attackStartTime = 0;
                 armServoPosition = STEMperFiConstants.ARM_DRIVE;
                 hMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -265,13 +286,13 @@ public class TeleMeet1 extends OpMode
 
 
         if (!this.iSpecimenMode) {
-        double leftTrigger = gpB.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER);
-        double rightTrigger = gpB.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER);
-        if (rightTrigger > 0.1 || leftTrigger > 0.1) {
-            bucketServo.setPosition(STEMperFiConstants.BUCKET_SCORE);
-        } else {
-            bucketServo.setPosition(STEMperFiConstants.BUCKET_INTAKE);
-        }
+            double leftTrigger = gpB.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER);
+            double rightTrigger = gpB.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER);
+            if (rightTrigger > 0.1 || leftTrigger > 0.1) {
+                bucketServo.setPosition(STEMperFiConstants.BUCKET_SCORE);
+            } else {
+                bucketServo.setPosition(STEMperFiConstants.BUCKET_INTAKE);
+            }
         }
 
         double gp2LY = gpB.getLeftY();
@@ -283,7 +304,7 @@ public class TeleMeet1 extends OpMode
             bucketVerticalPosition = 0;
             vMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         } else if (dUp2ButtonReader.wasJustPressed()) {
-            armServoPosition = STEMperFiConstants.ARM_INIT;
+            armServoPosition = iSpecimenMode ? STEMperFiConstants.ARM_INIT : STEMperFiConstants.ARM_INIT_SAMPLE;
             armServo.setPosition(armServoPosition);
             vMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             if (bucketVerticalPosition == STEMperFiConstants.SCORE_BUCKET_FIRST) {
@@ -297,7 +318,11 @@ public class TeleMeet1 extends OpMode
             bucketVerticalPosition += Math.round(gp2LY * 100);
             bucketVerticalPosition = Math.max(-50, bucketVerticalPosition);
         }
-        if (System.currentTimeMillis() - liftStartTime > STEMperFiConstants.LIFT_DELAY_MS) {
+        if (iSpecimenMode) {
+            vMotor.setTargetPosition(bucketVerticalPosition);
+            vMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            vMotor.setPower(1);
+        } else if (System.currentTimeMillis() - liftStartTime > STEMperFiConstants.LIFT_DELAY_MS) {
             vMotor.setTargetPosition(bucketVerticalPosition);
             vMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             vMotor.setPower(1);
@@ -309,8 +334,12 @@ public class TeleMeet1 extends OpMode
 //        telemetry.addData("Left X", lx);
 //        telemetry.addData("Left Y", ly);
 //        telemetry.addData("Right X", rx);
-//        telemetry.addData("HR:", odo.getHeading());
-//        telemetry.addData("Heading: ", degrees);
+        telemetry.addData("HR:", odo.getHeading());
+        telemetry.addData("Heading: ", degrees);
+        telemetry.addData("pos", odo.getPosition());
+        telemetry.addData("pos x", odo.getPosX());
+        telemetry.addData("pos y", odo.getPosY());
+
 
 
         double gp2RY = -gpB.getRightY();

@@ -33,7 +33,8 @@ public class STEMperFiConstants {
     public static final double ARM_SCORE = 0.29;
     public static final double ARM_DRIVE = 0.4;
     public static final double ARM_WALL = 0.4;
-    public static final double ARM_INIT = 0.31;
+    public static final double ARM_INIT = 0.33;
+    public static final double ARM_INIT_SAMPLE = 0.33;
 
     public static final double PINCHER_CLOSE = 0.95;
     public static final double PINCHER_OPEN = 0.5;

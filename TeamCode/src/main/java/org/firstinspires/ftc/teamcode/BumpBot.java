@@ -56,6 +56,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  */
 
 @TeleOp(name="Drive", group="FTC Lib")
+@Disabled
 public class BumpBot extends OpMode
 {
     //GoBildaPinpointDriver odo; // Declare OpMode member for the Odometry Computer

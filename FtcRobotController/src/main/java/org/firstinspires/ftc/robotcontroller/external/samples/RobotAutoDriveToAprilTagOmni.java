@@ -92,7 +92,7 @@ import java.util.concurrent.TimeUnit;
 public class RobotAutoDriveToAprilTagOmni extends LinearOpMode
 {
     // Adjust these numbers to suit your robot.
-    final double DESIRED_DISTANCE = 12.0; //  this is how close the camera should get to the target (inches)
+    final double DESIRED_DISTANCE = 4; //  this is how close the camera should get to the target (inches)
 
     //  Set the GAIN constants to control the relationship between the measured position error, and how much power is
     //  applied to the drive motors to correct the error.
@@ -129,10 +129,19 @@ public class RobotAutoDriveToAprilTagOmni extends LinearOpMode
         // Initialize the hardware variables. Note that the strings used here as parameters
         // to 'get' must match the names assigned during the robot configuration.
         // step (using the FTC Robot Controller app on the phone).
-        leftFrontDrive  = hardwareMap.get(DcMotor.class, "leftfront_drive");
-        rightFrontDrive = hardwareMap.get(DcMotor.class, "rightfront_drive");
-        leftBackDrive  = hardwareMap.get(DcMotor.class, "leftback_drive");
-        rightBackDrive = hardwareMap.get(DcMotor.class, "rightback_drive");
+//        leftFrontDrive  = hardwareMap.get(DcMotor.class, "leftfront_drive");
+//        rightFrontDrive = hardwareMap.get(DcMotor.class, "rightfront_drive");
+//        leftBackDrive  = hardwareMap.get(DcMotor.class, "leftback_drive");
+//        rightBackDrive = hardwareMap.get(DcMotor.class, "rightback_drive");
+        leftFrontDrive  = hardwareMap.get(DcMotor.class, "fl");
+        rightFrontDrive = hardwareMap.get(DcMotor.class, "fr");
+        leftBackDrive  = hardwareMap.get(DcMotor.class, "bl");
+        rightBackDrive = hardwareMap.get(DcMotor.class, "br");
+
+//        Motor frontLeft = new Motor(hardwareMap, "fl", Motor.GoBILDA.RPM_312);
+//        Motor frontRight = new Motor(hardwareMap, "fr", Motor.GoBILDA.RPM_312);
+//        Motor backLeft = new Motor(hardwareMap, "bl", Motor.GoBILDA.RPM_312);
+//        Motor backRight = new Motor(hardwareMap, "br", Motor.GoBILDA.RPM_312);
 
         // To drive forward, most robots need the motor on one side to be reversed, because the axles point in opposite directions.
         // When run, this OpMode should start both motors driving forward. So adjust these two lines based on your first test drive.
@@ -259,7 +268,7 @@ public class RobotAutoDriveToAprilTagOmni extends LinearOpMode
     private void initAprilTag() {
         // Create the AprilTag processor by using a builder.
         aprilTag = new AprilTagProcessor.Builder()
-                .setLensIntrinsics(481.985, 481.985, 334.203, 241.948)
+//                .setLensIntrinsics(481.985, 481.985, 334.203, 241.948)
                 .build();
 
         // Adjust Image Decimation to trade-off detection-range for detection-rate.
