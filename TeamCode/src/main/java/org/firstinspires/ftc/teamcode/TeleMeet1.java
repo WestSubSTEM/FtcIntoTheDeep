@@ -321,7 +321,11 @@ public class TeleMeet1 extends OpMode
         if (iSpecimenMode) {
             vMotor.setTargetPosition(bucketVerticalPosition);
             vMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            vMotor.setPower(1);
+            if (bucketVerticalPosition > vMotor.getCurrentPosition()) {
+                vMotor.setPower(1);
+            } else {
+                vMotor.setPower(STEMperFiConstants.SCORE_BUCKET_DOWN_SPEED);
+            }
         } else if (System.currentTimeMillis() - liftStartTime > STEMperFiConstants.LIFT_DELAY_MS) {
             vMotor.setTargetPosition(bucketVerticalPosition);
             vMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);

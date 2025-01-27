@@ -31,6 +31,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.arcrobotics.ftclib.command.button.GamepadButton;
 import com.arcrobotics.ftclib.drivebase.MecanumDrive;
+import com.arcrobotics.ftclib.gamepad.ButtonReader;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.arcrobotics.ftclib.hardware.motors.Motor;
@@ -39,6 +40,8 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 /*
@@ -56,7 +59,6 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  */
 
 @TeleOp(name="Climb", group="FTC Lib")
-@Disabled
 public class ClimbBot extends OpMode
 {
     //GoBildaPinpointDriver odo; // Declare OpMode member for the Odometry Computer
@@ -71,6 +73,12 @@ public class ClimbBot extends OpMode
     GamepadEx gpA, gpB;
     GamepadButton leftBumper, rightBumper;
     DcMotor vMotor, llMotor, lrMotor;
+
+    Servo linkServo;
+    double linkServoPosition = STEMperFiConstants.LINK_INIT;
+
+    ButtonReader rightBumperButtonReader, leftBumperButtonReader, outButtonReader, initButtonReader;
+
     //SparkFunLEDStick led;
     //RevIMU imu;
     /*
@@ -109,10 +117,10 @@ public class ClimbBot extends OpMode
         vMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         vMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         vMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
+        vMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         llMotor = hardwareMap.get(DcMotor.class, "ll");
-        llMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        llMotor.setDirection(DcMotorSimple.Direction.FORWARD);
         llMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         llMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         llMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -125,6 +133,15 @@ public class ClimbBot extends OpMode
 
        // mecanum = new MecanumDrive(frontLeft, frontRight, backLeft, backRight);
         mecanum = new MecanumDrive(backRight, backLeft , frontRight, frontLeft);
+
+        linkServo = hardwareMap.get(Servo.class, "link");
+        linkServo.setPosition(linkServoPosition);
+
+        rightBumperButtonReader = new ButtonReader(gpB, GamepadKeys.Button.RIGHT_BUMPER);
+        leftBumperButtonReader = new ButtonReader(gpB, GamepadKeys.Button.LEFT_BUMPER);
+
+        initButtonReader = new ButtonReader(gpB, GamepadKeys.Button.A);
+        outButtonReader = new ButtonReader(gpB, GamepadKeys.Button.B);
 
 //        hMotor = new MotorEx(hardwareMap, "h", Motor.GoBILDA.RPM_117);
 //        hMotor.setInverted(true);
@@ -206,6 +223,28 @@ public class ClimbBot extends OpMode
      */
     @Override
     public void loop() {
+
+        leftBumperButtonReader.readValue();
+        rightBumperButtonReader.readValue();
+        initButtonReader.readValue();
+        outButtonReader.readValue();
+
+        if (rightBumperButtonReader.wasJustPressed()) {
+            linkServoPosition -= 0.01;
+        } else if (leftBumperButtonReader.wasJustPressed()) {
+            linkServoPosition += 0.01;
+        } else if (initButtonReader.wasJustPressed()) {
+            linkServoPosition = STEMperFiConstants.LINK_INIT;
+        } else if (outButtonReader.wasJustPressed()) {
+            linkServoPosition = STEMperFiConstants.LINK_OUT;
+        }
+
+        linkServoPosition = Math.max(linkServoPosition, STEMperFiConstants.LINK_OUT);
+        linkServoPosition = Math.min(linkServoPosition, STEMperFiConstants.LINK_INIT);
+        linkServo.setPosition(linkServoPosition);
+
+        telemetry.addData("linkServoPosition:", linkServoPosition);
+
         //odo.update();
         double lx = gpA.getLeftX();
         double ly = gpA.getLeftY();
@@ -215,12 +254,12 @@ public class ClimbBot extends OpMode
 //
 
             telemetry.addLine("Robot Centric");
-            mecanum.driveRobotCentric(
-                    lx,
-                    ly,
-                    -rx,
-                    false
-            );
+            //mecanum.driveRobotCentric(
+            //        lx,
+             //       ly,
+              //      -rx,
+               //     false
+           // );
 //        } else {
 //            telemetry.addLine("Field Centric");
 //            mecanum.driveFieldCentric(
@@ -247,8 +286,8 @@ public class ClimbBot extends OpMode
             lyGpb = -gpB.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER);
             ryGpb = lyGpb;
         } else {
-            lyGpb = gamepad2.left_stick_y;
-            ryGpb = gamepad2.right_stick_y;
+            lyGpb = -gamepad2.left_stick_y;
+            ryGpb = -gamepad2.right_stick_y;
         }
 
         lyGpb = Math.abs(lyGpb) > 0.1 ? lyGpb : 0;
@@ -258,22 +297,22 @@ public class ClimbBot extends OpMode
         llMotor.setPower(lyGpb);
 
         telemetry.addData("Climb R Power:", ryGpb);
-        telemetry.addData("Climb L Power:", lyGpb);
+       telemetry.addData("Climb L Power:", lyGpb);
 
         telemetry.addData("Climb R Pos: ", lrMotor.getCurrentPosition());
-        telemetry.addData("Climb L Pos: ", llMotor.getCurrentPosition());
+       telemetry.addData("Climb L Pos: ", llMotor.getCurrentPosition());
 
 
 
 
        // telemetry.addData("HR:", odo.getHeading());
       //  telemetry.addData("Heading: ", degrees);
-//        double gp2LY = gpB.getLeftY();
+        double gp1LY = gpA.getLeftY();
 //        double gp2RX = gpB.getRightX();
 
-//        telemetry.addData("v", gp2LY);
-//        telemetry.addData("vMotor.encoder.getPosition()", vMotor.encoder.getPosition());
-//        telemetry.addData("vMotor.encoder.getDistance()", vMotor.encoder.getDistance());
+        telemetry.addData("v", gp1LY);
+        telemetry.addData("vMotor.encoder.getCurrentPosition()", vMotor.getCurrentPosition());
+        vMotor.setPower(gp1LY);
 //        vMotor.set(gp2LY);
 //        telemetry.addData("h", gp2RX);
 //        telemetry.addData("hMotor.getCurrentPosition()", hMotor.getCurrentPosition());

@@ -28,6 +28,11 @@ public class STEMperFiConstants {
     public static final double BUCKET_INTAKE = 0.62;
     public static final double BUCKET_SCORE = 0.58;
 
+    public static final double NEW_BUCKET_INIT = 0.1;
+    public static final double NEW_BUCKET_INTAKE = 0.36;
+    public static final double NEW_BUCKET_SCORE = 0.45;
+
+
     public static final double ARM_AIM = 0.5;
     public static final double ARM_INTAKE = 0.52;
     public static final double ARM_SCORE = 0.29;
@@ -35,6 +40,16 @@ public class STEMperFiConstants {
     public static final double ARM_WALL = 0.4;
     public static final double ARM_INIT = 0.33;
     public static final double ARM_INIT_SAMPLE = 0.33;
+
+    public static final double NEW_ARM_AIM = 0.47;
+    public static final double NEW_ARM_INTAKE = 0.49;
+    public static final double NEW_ARM_SCORE = 0.27;
+    public static final double NEW_ARM_DRIVE = 0.43;
+    public static final double NEW_ARM_WALL = 0.43;
+    public static final double NEW_ARM_INIT = 0.34;
+    public static final double NEW_ARM_INIT_SAMPLE = 0.34;
+
+
 
     public static final double PINCHER_CLOSE = 0.95;
     public static final double PINCHER_OPEN = 0.5;
@@ -55,13 +70,29 @@ public class STEMperFiConstants {
 //    public static final double INTAKE_IN = -0.5;
 //    public static final double INTAKE_OUT = 0.5;
 
-    public static final int SCORE_BUCKET_FIRST = 1864;
-    public static final int SCORE_BUCKET_SECOND = 3100;
-    public static final int SCORE_BUCKET_SPECIMEN = 1417;
+    public static final int NEW_SCORE_BUCKET_FIRST = 1788; //  1788
+    public static final int NEW_SCORE_BUCKET_SECOND = 2960; // 3030
+    public static final int NEW_SCORE_BUCKET_SPECIMEN = 1345;
+
+    public static final int SCORE_BUCKET_FIRST = 1864; //  1788
+    public static final int SCORE_BUCKET_SECOND = 3100; // 3030
+    public static final int SCORE_BUCKET_SPECIMEN = 1280;
+    public static final double SCORE_BUCKET_DOWN_SPEED = 0.5;
 
     public static final int H_SCORE = 171;
 
     public static final long ATTACK_PINCHER_CLOSE_ms = 500;
     public static final long ATTACK_DRIVE_ms = 1_000;
     public static final long LIFT_DELAY_MS = 500;
+
+    public static final double LINK_INIT = 0.72;
+    public static final double LINK_SCORE = 0.65;
+    public static final double LINK_OUT = 0.2;
+    public static final double LINK_INCREMENT = 0.01;
+
+    public static final long  CLIMB_MODE_ACTIVATION_MS = 500;
+    public static final double RAINBOW_INCREMENT = .001;
+
+    public static final int CLIMB_LEVEL_1 = 1795;
+    public static final int CLIMB_MAX = 4547;
 }

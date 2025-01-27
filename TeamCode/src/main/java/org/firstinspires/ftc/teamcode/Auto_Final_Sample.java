@@ -7,6 +7,7 @@ import com.arcrobotics.ftclib.gamepad.ButtonReader;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.arcrobotics.ftclib.hardware.motors.Motor;
+import com.qualcomm.hardware.sparkfun.SparkFunOTOS;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -23,6 +24,7 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
@@ -31,8 +33,8 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-@Autonomous(name="Auto Meet 3", group="FTC Lib")
-public class AutoSpecimen extends LinearOpMode
+@Autonomous(name="Final Auto Sample", group="FTC Lib")
+public class Auto_Final_Sample extends LinearOpMode
 {
     // april tag vars
     // Adjust these numbers to suit your robot.
@@ -60,7 +62,8 @@ public class AutoSpecimen extends LinearOpMode
     private AprilTagProcessor aprilTag;              // Used for managing the AprilTag detection process.
     private AprilTagDetection desiredTag = null;     // Used to hold the data for a detected AprilTag
 
-    GoBildaPinpointDriver odo; // Declare OpMode member for the Odometry Computer
+    // Create an instance of the sensor
+    SparkFunOTOS myOtos;
 
     Gamepad.RumbleEffect customRumbleEffect;    // Use to build a custom rumble sequence.
 
@@ -69,7 +72,7 @@ public class AutoSpecimen extends LinearOpMode
 
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
-    DcMotor hMotor, vMotor;
+    DcMotor vMotor;
     // input motors exactly as shown below
     MecanumDrive mecanum;
     GamepadEx gpA, gpB;
@@ -78,79 +81,63 @@ public class AutoSpecimen extends LinearOpMode
     long liftStartTime = 0;
     long odoResetTime = 0;
 
-    Servo bucketServo, ledServo, armServo, pincherServo;
-    double pincherPosition = STEMperFiConstants.PINCHER_OPEN;
-
+    Servo bucketServo, ledServo, armServo, pincherServo,linkServo;
+    double pincherPosition = STEMperFiConstants.PINCHER_CLOSE;
+    double linkServoPosition = STEMperFiConstants.LINK_INIT;
     boolean iSpecimenMode = false;
 
     ButtonReader square2ButtonReader, triangle2ButtonReader, circle2ButtonReader, x2ButtonReader, dUp2ButtonReader, dDown2ButtonReader, dLeft2ButtonReader, dRight2ButtonReader, leftStick2ButtonReader, rightStick2ButtonReader;
 
-    double armServoPosition = STEMperFiConstants.ARM_INIT;
+    double armServoPosition = STEMperFiConstants.NEW_ARM_INIT;
 
     @Override
     public void runOpMode() {
         aprilTagInit();
         robotInit();
         while (opModeInInit()) {
-            odo.resetPosAndIMU();
-            sleep(250);
-            telemetry.addData(">", "Robot Heading = %4.0f", Math.toDegrees(odo.getHeading()));
+            myOtos.resetTracking();
+//            odo.resetPosAndIMU();
+            telemetry.addData(">", "Robot Heading = %4.0f", Math.toDegrees(myOtos.getPosition().h));
             telemetry.update();
         }
-//        while (opModeIsActive()) {
-//            odo.update();
-//            double lx = gpA.getLeftX();
-//            double ly = gpA.getLeftY();
-//            double rx = gpA.getRightX();
-//            if (gamepad1.left_bumper || vMotor.getCurrentPosition() > 400) {
-//                lx = lx / 2;
-//                ly = ly / 2;
-//                rx = rx / 2;
-//            }
-//            double degrees = Math.toDegrees(odo.getHeading());
-//            mecanum.driveRobotCentric(lx, ly, rx);
-//            telemetry.addData("HR:", odo.getHeading());
-//            telemetry.addData("Heading: ", degrees);
-//            telemetry.addData("pos", odo.getPosition());
-//            telemetry.addData("pos x", odo.getPosX());
-//            telemetry.addData("pos y", odo.getPosY());
-//            telemetry.update();
-//        }
 
-
-        driveStraight(.3, 500, 0);
-        vMotor.setTargetPosition(STEMperFiConstants.SCORE_BUCKET_SPECIMEN);
-        vMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        vMotor.setPower(1);
-        sleep(1_000);
-        turnToDegrees(.3, -90);
-        ledServo.setPosition(STEMperFiConstants.GB_LED_GREEN);
-        sleep(500);
-        ledServo.setPosition(STEMperFiConstants.GB_LED_ORANGE);
-        driveStraight(.3, -180, 0);
-        sleep(500);
-        //strafeLeft(.3, 100);
-        strafeLeftTime(.5, 1_500);
-        vMotor.setTargetPosition(STEMperFiConstants.SCORE_BUCKET_SPECIMEN / 2);
-        vMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        vMotor.setPower(STEMperFiConstants.SCORE_BUCKET_DOWN_SPEED);
-        sleep(4_000);
-        strafeRight(.3, 200);
-        vMotor.setTargetPosition(10);
-        vMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        vMotor.setPower(1);
-        sleep(1_000);
-        moveToAnyTag();
-        vMotor.setPower(0);
-        turnToDegrees(.3, 75);
-        strafeRightTime(0.4, 1_500);
+       // driveStraight(0.2, 10, 0);
+        turnToHeading(0.2, 45);
+        sleep(10_000);
+//        strafeLeft(.3,200);
+//        //driveStraight(.3, 500, 0);
+//        vMotor.setTargetPosition(STEMperFiConstants.SCORE_BUCKET_SPECIMEN);
+//        vMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+//        vMotor.setPower(1);
+//        sleep(1_000);
+//        turnToDegrees(.3, -90);
+//        ledServo.setPosition(STEMperFiConstants.GB_LED_GREEN);
+//        sleep(500);
+//        ledServo.setPosition(STEMperFiConstants.GB_LED_ORANGE);
+//        driveStraight(.3, -180, 0);
+//        sleep(500);
+//        //strafeLeft(.3, 100);
+//        strafeLeftTime(.5, 1_500);
+//        vMotor.setTargetPosition(STEMperFiConstants.SCORE_BUCKET_SPECIMEN / 2);
+//        vMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+//        vMotor.setPower(STEMperFiConstants.SCORE_BUCKET_DOWN_SPEED);
+//        sleep(4_000);
+//        strafeRight(.3, 200);
+//        vMotor.setTargetPosition(10);
+//        vMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+//        vMotor.setPower(1);
+//        sleep(1_000);
+//        moveToAnyTag();
+//        vMotor.setPower(0);
+//        turnToDegrees(.3, 75);
+//        strafeRightTime(0.4, 1_500);
 
 //        strafeLeft(.3, 200);
-  //      strafeRight(.3, 200);
+        //      strafeRight(.3, 200);
         // turnToDegrees(.2, -1.5708);
-       // driveStraight(.2, -500, 0);
+        // driveStraight(.2, -500, 0);
     }
-        /*
+    /*
      * Code to run ONCE when the driver hits INIT
      */
 
@@ -384,13 +371,15 @@ public class AutoSpecimen extends LinearOpMode
 //        leftStick2ButtonReader = new ButtonReader(gpB, GamepadKeys.Button.LEFT_STICK_BUTTON);
 
         bucketServo = hardwareMap.get(Servo.class, "bucket");
-        bucketServo.setPosition(STEMperFiConstants.BUCKET_INIT);
+        bucketServo.setPosition(STEMperFiConstants.NEW_BUCKET_INIT);
         ledServo = hardwareMap.get(Servo.class, "gbled");
         ledServo.setPosition(STEMperFiConstants.GB_LED_WHITE);
         armServo = hardwareMap.get(Servo.class, "arm");
         armServo.setPosition(armServoPosition);
         pincherServo = hardwareMap.get(Servo.class, "intake");
         pincherServo.setPosition(pincherPosition);
+        linkServo = hardwareMap.get(Servo.class, "link");
+        linkServo.setPosition(linkServoPosition);
 
         Motor frontLeft = new Motor(hardwareMap, "fl", Motor.GoBILDA.RPM_312);
         Motor frontRight = new Motor(hardwareMap, "fr", Motor.GoBILDA.RPM_312);
@@ -399,10 +388,10 @@ public class AutoSpecimen extends LinearOpMode
 
         mecanum = new MecanumDrive(backRight, backLeft , frontRight, frontLeft);
 
-        hMotor = hardwareMap.get(DcMotor.class, "h");
-        hMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        hMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        hMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+       // hMotor = hardwareMap.get(DcMotor.class, "h");
+       // hMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        //hMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        //hMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         vMotor = hardwareMap.get(DcMotor.class, "v");
         vMotor.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -412,43 +401,11 @@ public class AutoSpecimen extends LinearOpMode
         vMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         vMotor.setPower(1);
 
-        odo = hardwareMap.get(GoBildaPinpointDriver.class,"odo");
 
-        /*
-        Set the odometry pod positions relative to the point that the odometry computer tracks around.
-        The X pod offset refers to how far sideways from the tracking point the
-        X (forward) odometry pod is. Left of the center is a positive number,
-        right of center is a negative number. the Y pod offset refers to how far forwards from
-        the tracking point the Y (strafe) odometry pod is. forward of center is a positive number,
-        backwards is a negative number.
-         */
-        odo.setOffsets(-84.0, -168.0); //these are tuned for 3110-0002-0001 Product Insight #1
+        myOtos = myOtos = hardwareMap.get(SparkFunOTOS.class, "sensor_otos");
+        // All the configuration for the OTOS is done in this helper method, check it out!
+        configureOtos();
 
-        /*
-        Set the kind of pods used by your robot. If you're using goBILDA odometry pods, select either
-        the goBILDA_SWINGARM_POD, or the goBILDA_4_BAR_POD.
-        If you're using another kind of odometry pod, uncomment setEncoderResolution and input the
-        number of ticks per mm of your odometry pod.
-         */
-        odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-
-        /*
-        Set the direction that each of the two odometry pods count. The X (forward) pod should
-        increase when you move the robot forward. And the Y (strafe) pod should increase when
-        you move the robot to the left.
-         */
-        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
-
-        /*
-        Before running the robot, recalibrate the IMU. This needs to happen when the robot is stationary
-        The IMU will automatically calibrate when first powered on, but recalibrating before running
-        the robot is a good idea to ensure that the calibration is "good".
-        resetPosAndIMU will reset the position to 0,0,0 and also recalibrate the IMU.
-        This is recommended before you run your autonomous, as a bad initial calibration can cause
-        an incorrect starting value for x, y, and heading.
-         */
-        odo.recalibrateIMU();
-        odo.resetPosAndIMU();
     }
 
 
@@ -456,7 +413,6 @@ public class AutoSpecimen extends LinearOpMode
     /*
      * Code to run ONCE when the driver hits PLAY
      */
-
     public void noStart() {
         runtime.reset();
     }
@@ -465,218 +421,7 @@ public class AutoSpecimen extends LinearOpMode
      * Code to run REPEATEDLY after the driver hits PLAY but before they hit STOP
      */
 
-    public void noLoop() {
-        odo.update();
-        double lx = gpA.getLeftX();
-        double ly = gpA.getLeftY();
-        double rx = gpA.getRightX();
-        if (gamepad1.left_bumper || vMotor.getCurrentPosition() > 400) {
-            lx = lx / 2;
-            ly = ly / 2;
-            rx = rx / 2;
-        }
-        double degrees = Math.toDegrees(odo.getHeading());
-
-        mecanum.driveFieldCentric(
-                lx,
-                ly,
-                rx,
-                degrees,   // gyro value passed in here must be in degrees
-                false
-        );
-
-        // Gamepad 1
-        if (gamepad1.right_trigger > .9 && gamepad1.left_trigger > .9) {
-            long now = System.currentTimeMillis();
-            if (now - odoResetTime > 1_000) {
-                odo.resetPosAndIMU();
-                odoResetTime = now;
-                gamepad1.runRumbleEffect(customRumbleEffect);
-
-                ledServo.setPosition(STEMperFiConstants.GB_LED_YELLOW);
-            }
-        }
-
-        // Gamepad 2
-        x2ButtonReader.readValue();
-        circle2ButtonReader.readValue();
-        square2ButtonReader.readValue();
-        triangle2ButtonReader.readValue();
-
-        dUp2ButtonReader.readValue();
-        dDown2ButtonReader.readValue();
-        dLeft2ButtonReader.readValue();
-        dRight2ButtonReader.readValue();
-        rightStick2ButtonReader.readValue();
-        leftStick2ButtonReader.readValue();
-
-        if (dRight2ButtonReader.wasJustPressed()) {
-            this.iSpecimenMode = !this.iSpecimenMode;
-            if (this.iSpecimenMode) {
-                pincherPosition = STEMperFiConstants.PINCHER_CLOSE;
-                armServoPosition = STEMperFiConstants.ARM_INIT;
-                bucketServo.setPosition(STEMperFiConstants.BUCKET_INIT);
-                ledServo.setPosition(STEMperFiConstants.GB_LED_INDIGO);
-                hMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                hMotor.setTargetPosition(STEMperFiConstants.H_SCORE);
-                hMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                hMotor.setPower(1);
-            } else {
-                ledServo.setPosition(STEMperFiConstants.GB_LED_OFF);
-            }
-        }
-
-        if (iSpecimenMode) {
-            if (triangle2ButtonReader.wasJustPressed()) {
-                attackStartTime = 0;
-                pincherPosition = STEMperFiConstants.PINCHER_OPEN;
-                armServoPosition = STEMperFiConstants.ARM_AIM;
-                ledServo.setPosition(STEMperFiConstants.GB_LED_RED);
-            } else if (x2ButtonReader.wasJustPressed() || dLeft2ButtonReader.wasJustPressed()) {
-                attackStartTime = 0;
-                armServoPosition = STEMperFiConstants.ARM_DRIVE;
-                hMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                hMotor.setTargetPosition(STEMperFiConstants.H_SCORE);
-                hMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                hMotor.setPower(1);
-            } else if (circle2ButtonReader.wasJustPressed()) {
-                attackStartTime = System.currentTimeMillis();
-                armServoPosition = STEMperFiConstants.ARM_INTAKE;
-                ledServo.setPosition(STEMperFiConstants.GB_LED_GREEN);
-            } else if (square2ButtonReader.wasJustPressed()) {
-                attackStartTime = 0;
-                armServoPosition = STEMperFiConstants.ARM_DRIVE;
-                ledServo.setPosition(STEMperFiConstants.GB_LED_ORANGE);
-            }
-        } else {
-            if (triangle2ButtonReader.wasJustPressed()) {
-                attackStartTime = 0;
-                pincherPosition = STEMperFiConstants.PINCHER_OPEN;
-                armServoPosition = STEMperFiConstants.ARM_AIM;
-                ledServo.setPosition(STEMperFiConstants.GB_LED_RED);
-            } else if (x2ButtonReader.wasJustPressed()) {
-                attackStartTime = 0;
-                armServoPosition = STEMperFiConstants.ARM_SCORE;
-                hMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                hMotor.setTargetPosition(STEMperFiConstants.H_SCORE);
-                hMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                hMotor.setPower(1);
-            } else if (circle2ButtonReader.wasJustPressed()) {
-                attackStartTime = System.currentTimeMillis();
-                armServoPosition = STEMperFiConstants.ARM_INTAKE;
-                ledServo.setPosition(STEMperFiConstants.GB_LED_GREEN);
-            } else if (square2ButtonReader.wasJustPressed()) {
-                attackStartTime = 0;
-                armServoPosition = STEMperFiConstants.ARM_DRIVE;
-                ledServo.setPosition(STEMperFiConstants.GB_LED_ORANGE);
-            }
-        }
-        armServo.setPosition(armServoPosition);
-        if (attackStartTime > 0) {
-            long attackDuration = System.currentTimeMillis() - attackStartTime;
-            if (attackDuration > STEMperFiConstants.ATTACK_DRIVE_ms) {
-                attackStartTime = 0;
-                armServoPosition = STEMperFiConstants.ARM_DRIVE;
-                ledServo.setPosition(STEMperFiConstants.GB_LED_ORANGE);
-                armServo.setPosition(armServoPosition);
-            } else if (attackDuration > STEMperFiConstants.ATTACK_PINCHER_CLOSE_ms) {
-                pincherPosition = STEMperFiConstants.PINCHER_CLOSE;
-                armServo.setPosition(armServoPosition);
-            }
-        }
-
-        if (gamepad2.left_bumper && attackStartTime == 0) {
-            pincherPosition = STEMperFiConstants.PINCHER_OPEN;
-        } else if (gamepad2.right_bumper) {
-            pincherPosition = STEMperFiConstants.PINCHER_CLOSE;
-        }
-        pincherServo.setPosition(pincherPosition);
-
-
-        if (!this.iSpecimenMode) {
-            double leftTrigger = gpB.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER);
-            double rightTrigger = gpB.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER);
-            if (rightTrigger > 0.1 || leftTrigger > 0.1) {
-                bucketServo.setPosition(STEMperFiConstants.BUCKET_SCORE);
-            } else {
-                bucketServo.setPosition(STEMperFiConstants.BUCKET_INTAKE);
-            }
-        }
-
-        double gp2LY = gpB.getLeftY();
-        int vTargetDiff = vMotor.getCurrentPosition() - vMotor.getTargetPosition();
-        if (leftStick2ButtonReader.wasJustPressed()) {
-            vMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            bucketVerticalPosition = 0;
-        } else if (dDown2ButtonReader.wasJustPressed()) {
-            bucketVerticalPosition = 0;
-            vMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        } else if (dUp2ButtonReader.wasJustPressed()) {
-            armServoPosition = iSpecimenMode ? STEMperFiConstants.ARM_INIT : STEMperFiConstants.ARM_INIT_SAMPLE;
-            armServo.setPosition(armServoPosition);
-            vMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            if (bucketVerticalPosition == STEMperFiConstants.SCORE_BUCKET_FIRST) {
-                bucketVerticalPosition = STEMperFiConstants.SCORE_BUCKET_SECOND;
-            } else {
-                liftStartTime = System.currentTimeMillis();
-                bucketVerticalPosition = iSpecimenMode ? STEMperFiConstants.SCORE_BUCKET_SPECIMEN : STEMperFiConstants.SCORE_BUCKET_FIRST;
-            }
-        } else if (Math.abs(gp2LY) > 0.1 && Math.abs(vTargetDiff) < 100) {
-            vMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            bucketVerticalPosition += Math.round(gp2LY * 100);
-            bucketVerticalPosition = Math.max(-50, bucketVerticalPosition);
-        }
-        if (iSpecimenMode) {
-            vMotor.setTargetPosition(bucketVerticalPosition);
-            vMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            vMotor.setPower(1);
-        } else if (System.currentTimeMillis() - liftStartTime > STEMperFiConstants.LIFT_DELAY_MS) {
-            vMotor.setTargetPosition(bucketVerticalPosition);
-            vMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            vMotor.setPower(1);
-        }
-        if (bucketVerticalPosition == 0 && vTargetDiff < 50) {
-            vMotor.setPower(0);
-        }
-
-//        telemetry.addData("Left X", lx);
-//        telemetry.addData("Left Y", ly);
-//        telemetry.addData("Right X", rx);
-        telemetry.addData("HR:", odo.getHeading());
-        telemetry.addData("Heading: ", degrees);
-        telemetry.addData("pos", odo.getPosition());
-        telemetry.addData("pos x", odo.getPosX());
-        telemetry.addData("pos y", odo.getPosY());
-
-
-
-        double gp2RY = -gpB.getRightY();
-        if (dRight2ButtonReader.wasJustPressed()) {
-            hMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            hMotor.setTargetPosition(STEMperFiConstants.H_SCORE);
-            hMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            hMotor.setPower(1);
-        } else if (rightStick2ButtonReader.wasJustPressed()) {
-            hMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        } else {
-            if (hMotor.getMode() != DcMotor.RunMode.RUN_TO_POSITION || (Math.abs(gp2RY) > 0.1)) {
-                hMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-                hMotor.setPower(gp2RY);
-            }
-        }
-        telemetry.addData("v", gp2LY);
-        telemetry.addData("targetPosition", bucketVerticalPosition);
-        telemetry.addData("vMotor.getTargetPosition)", vMotor.getTargetPosition());
-        telemetry.addData("vMotor.getCurrentPosition()", vMotor.getCurrentPosition());
-
-        //vMotor.set(gp2LY);
-        telemetry.addData("h", gp2RY);
-        telemetry.addData("hMotor.getCurrentPosition()", hMotor.getCurrentPosition());
-        telemetry.addData("hMotor.getTargetPosition)", hMotor.getTargetPosition());
-
-    }
-
-    /*
+         /*
      * Code to run ONCE after the driver hits STOP
      */
 
@@ -700,135 +445,240 @@ public class AutoSpecimen extends LinearOpMode
     public void driveStraight(double maxDriveSpeed,
                               double distance,
                               double heading) {
-
-
-        odo.resetPosAndIMU();
-        odo.update();
+//        odo.resetPosAndIMU();
+//        odo.update();
+        SparkFunOTOS.Pose2D startPos = myOtos.getPosition();
+        double targetX = startPos.x + distance;
         if (distance > 0) {
             mecanum.driveRobotCentric(0, maxDriveSpeed, 0);
             // Ensure that the OpMode is still active
-            while (odo.getPosX() < distance && opModeIsActive()) {
-                odo.update();
-                telemetry.addData("target x: ", distance);
-                telemetry.addData("current x: ", odo.getPosX());
+            while (myOtos.getPosition().x < targetX && opModeIsActive()) {
+                telemetry.addData("target x: ", targetX);
+                telemetry.addData("current x: ", myOtos.getPosition().x);
                 telemetry.update();
             }
         } else {
             mecanum.driveRobotCentric(0, -maxDriveSpeed, 0);
             // Ensure that the OpMode is still active
-            while (odo.getPosX() > distance && opModeIsActive()) {
-                odo.update();
-                telemetry.addData("target x: ", distance);
-                telemetry.addData("current x: ", odo.getPosX());
+            while (myOtos.getPosition().x > targetX && opModeIsActive()) {
+                telemetry.addData("target x: ", targetX);
+                telemetry.addData("current x: ", myOtos.getPosition().x);
                 telemetry.update();
             }
         }
         mecanum.driveRobotCentric(0, 0, 0);
     }
 
-    public void turnToDegrees(double maxTurnSpeed, double angDeg) {
-        odo.resetPosAndIMU();
-        sleep(500);
-        odo.update();
-        if (angDeg > 0) {
+    public void turnToHeading(double maxTurnSpeed, double targetHeading) {
+        double currentHeading = myOtos.getPosition().h;
+        if (targetHeading > currentHeading) {
             mecanum.driveRobotCentric(0, 0, maxTurnSpeed);
-            while (Math.toDegrees(odo.getHeading()) < angDeg && opModeIsActive()) {
-                double degrees = Math.toDegrees(odo.getHeading());
+            while (myOtos.getPosition().h < targetHeading && opModeIsActive()) {
                 ledServo.setPosition(STEMperFiConstants.GB_LED_RED);
-                telemetry.addData("target:", angDeg);
-                telemetry.addData("HR:", odo.getHeading());
-                telemetry.addData("Heading: ", degrees);
-                telemetry.addData("pos", odo.getPosition());
-                telemetry.addData("pos x", odo.getPosX());
-                telemetry.addData("pos y", odo.getPosY());
+                telemetry.addData("target h:", targetHeading);
+                telemetry.addData("current h:", myOtos.getPosition().h);
                 telemetry.update();
                 sleep(10);
-                odo.update();
             }
         } else {
             mecanum.driveRobotCentric(0, 0, -maxTurnSpeed);
-            while (Math.toDegrees(odo.getHeading()) > angDeg && opModeIsActive()) {
+            while (myOtos.getPosition().h > targetHeading && opModeIsActive()) {
                 ledServo.setPosition(STEMperFiConstants.GB_LED_BLUE);
-                double degrees = Math.toDegrees(odo.getHeading());
-                telemetry.addData("target:", angDeg);
-                telemetry.addData("HR:", odo.getHeading());
-                telemetry.addData("Heading: ", degrees);
-                telemetry.addData("pos", odo.getPosition());
-                telemetry.addData("pos x", odo.getPosX());
-                telemetry.addData("pos y", odo.getPosY());
+                telemetry.addData("target h:", targetHeading);
+                telemetry.addData("current h:", myOtos.getPosition().h);
                 telemetry.update();
                 sleep(10);
-                odo.update();
             }
         }
         ledServo.setPosition(STEMperFiConstants.GB_LED_OFF);
         mecanum.driveRobotCentric(0, 0, 0);
+    }
 
+
+    public void turnToDegrees(double maxTurnSpeed, double angDeg) {
+//        odo.update();
+//        if (angDeg > 0) {
+//            mecanum.driveRobotCentric(0, 0, maxTurnSpeed);
+//            while (Math.toDegrees(odo.getHeading()) < angDeg && opModeIsActive()) {
+//                double degrees = Math.toDegrees(odo.getHeading());
+//                ledServo.setPosition(STEMperFiConstants.GB_LED_RED);
+//                telemetry.addData("target:", angDeg);
+//                telemetry.addData("HR:", odo.getHeading());
+//                telemetry.addData("Heading: ", degrees);
+//                telemetry.addData("pos", odo.getPosition());
+//                telemetry.addData("pos x", odo.getPosX());
+//                telemetry.addData("pos y", odo.getPosY());
+//                telemetry.update();
+//                sleep(10);
+//                odo.update();
+//            }
+//        } else {
+//            mecanum.driveRobotCentric(0, 0, -maxTurnSpeed);
+//            while (Math.toDegrees(odo.getHeading()) > angDeg && opModeIsActive()) {
+//                ledServo.setPosition(STEMperFiConstants.GB_LED_BLUE);
+//                double degrees = Math.toDegrees(odo.getHeading());
+//                telemetry.addData("target:", angDeg);
+//                telemetry.addData("HR:", odo.getHeading());
+//                telemetry.addData("Heading: ", degrees);
+//                telemetry.addData("pos", odo.getPosition());
+//                telemetry.addData("pos x", odo.getPosX());
+//                telemetry.addData("pos y", odo.getPosY());
+//                telemetry.update();
+//                sleep(10);
+//                odo.update();
+//            }
+//        }
+//        ledServo.setPosition(STEMperFiConstants.GB_LED_OFF);
+//        mecanum.driveRobotCentric(0, 0, 0);
     }
 
     public void strafeLeftTime(double maxDriveSpeed,
-                           long timeMs) {
-        long start = System.currentTimeMillis();
-        odo.resetPosAndIMU();
-        odo.update();
-        mecanum.driveRobotCentric(-maxDriveSpeed, 0, 0);
-        // Ensure that the OpMode is still active
-        while (opModeIsActive() && ((System.currentTimeMillis() - start) < timeMs)) {
-            sleep(100);
-            odo.update();
-            telemetry.addData("current y: ", odo.getPosY());
-            telemetry.update();
-        }
-
-        mecanum.driveRobotCentric(0, 0, 0);
+                               long timeMs) {
+//        long start = System.currentTimeMillis();
+//        odo.resetPosAndIMU();
+//        odo.update();
+//        mecanum.driveRobotCentric(-maxDriveSpeed, 0, 0);
+//        // Ensure that the OpMode is still active
+//        while (opModeIsActive() && ((System.currentTimeMillis() - start) < timeMs)) {
+//            sleep(100);
+//            odo.update();
+//            telemetry.addData("current y: ", odo.getPosY());
+//            telemetry.update();
+//        }
+//
+//        mecanum.driveRobotCentric(0, 0, 0);
     }
 
     public void strafeLeft(double maxDriveSpeed,
                            double distance) {
-        odo.resetPosAndIMU();
-        odo.update();
-        mecanum.driveRobotCentric(-maxDriveSpeed, 0, 0);
-        // Ensure that the OpMode is still active
-        while (odo.getPosY() < distance && opModeIsActive()) {
-            odo.update();
-            telemetry.addData("target y: ", distance);
-            telemetry.addData("current y: ", odo.getPosY());
-            telemetry.update();
-        }
-
-        mecanum.driveRobotCentric(0, 0, 0);
+//        odo.resetPosAndIMU();
+//        odo.update();
+//        mecanum.driveRobotCentric(-maxDriveSpeed, 0, 0);
+//        // Ensure that the OpMode is still active
+//        while (odo.getPosY() < distance && opModeIsActive()) {
+//            odo.update();
+//            telemetry.addData("target y: ", distance);
+//            telemetry.addData("current y: ", odo.getPosY());
+//            telemetry.update();
+//        }
+//
+//        mecanum.driveRobotCentric(0, 0, 0);
     }
 
     public void strafeRight(double maxDriveSpeed,
-                           double distance) {
-        odo.resetPosAndIMU();
-        odo.update();
-        mecanum.driveRobotCentric(maxDriveSpeed, 0, 0);
-        // Ensure that the OpMode is still active
-        while (odo.getPosY() > -distance && opModeIsActive()) {
-            odo.update();
-            telemetry.addData("target y: ", distance);
-            telemetry.addData("current y: ", odo.getPosY());
-            telemetry.update();
-        }
-
-        mecanum.driveRobotCentric(0, 0, 0);
+                            double distance) {
+//        odo.resetPosAndIMU();
+//        odo.update();
+//        mecanum.driveRobotCentric(maxDriveSpeed, 0, 0);
+//        // Ensure that the OpMode is still active
+//        while (odo.getPosY() > -distance && opModeIsActive()) {
+//            odo.update();
+//            telemetry.addData("target y: ", distance);
+//            telemetry.addData("current y: ", odo.getPosY());
+//            telemetry.update();
+//        }
+//
+//        mecanum.driveRobotCentric(0, 0, 0);
     }
 
     public void strafeRightTime(double maxDriveSpeed, long timeMs) {
-        long start = System.currentTimeMillis();
-        odo.resetPosAndIMU();
-        odo.update();
-        mecanum.driveRobotCentric(maxDriveSpeed, 0, 0);
-        // Ensure that the OpMode is still active
-        while (opModeIsActive() && ((System.currentTimeMillis() - start) < timeMs)) {
-            sleep(100);
-            odo.update();
-            telemetry.addData("current y: ", odo.getPosY());
-            telemetry.update();
-        }
-
-        mecanum.driveRobotCentric(0, 0, 0);
+//        long start = System.currentTimeMillis();
+//        odo.resetPosAndIMU();
+//        odo.update();
+//        mecanum.driveRobotCentric(maxDriveSpeed, 0, 0);
+//        // Ensure that the OpMode is still active
+//        while (opModeIsActive() && ((System.currentTimeMillis() - start) < timeMs)) {
+//            sleep(100);
+//            odo.update();
+//            telemetry.addData("current y: ", odo.getPosY());
+//            telemetry.update();
+//        }
+//
+//        mecanum.driveRobotCentric(0, 0, 0);
     }
+
+    private void configureOtos() {
+        telemetry.addLine("Configuring OTOS...");
+        telemetry.update();
+
+        // Set the desired units for linear and angular measurements. Can be either
+        // meters or inches for linear, and radians or degrees for angular. If not
+        // set, the default is inches and degrees. Note that this setting is not
+        // persisted in the sensor, so you need to set at the start of all your
+        // OpModes if using the non-default value.
+        // myOtos.setLinearUnit(DistanceUnit.METER);
+        myOtos.setLinearUnit(DistanceUnit.INCH);
+        // myOtos.setAngularUnit(AnguleUnit.RADIANS);
+        myOtos.setAngularUnit(AngleUnit.DEGREES);
+
+        // Assuming you've mounted your sensor to a robot and it's not centered,
+        // you can specify the offset for the sensor relative to the center of the
+        // robot. The units default to inches and degrees, but if you want to use
+        // different units, specify them before setting the offset! Note that as of
+        // firmware version 1.0, these values will be lost after a power cycle, so
+        // you will need to set them each time you power up the sensor. For example, if
+        // the sensor is mounted 5 inches to the left (negative X) and 10 inches
+        // forward (positive Y) of the center of the robot, and mounted 90 degrees
+        // clockwise (negative rotation) from the robot's orientation, the offset
+        // would be {-5, 10, -90}. These can be any value, even the angle can be
+        // tweaked slightly to compensate for imperfect mounting (eg. 1.3 degrees).
+        SparkFunOTOS.Pose2D offset = new SparkFunOTOS.Pose2D(0.75, -2.86, 0);
+        myOtos.setOffset(offset);
+
+        // Here we can set the linear and angular scalars, which can compensate for
+        // scaling issues with the sensor measurements. Note that as of firmware
+        // version 1.0, these values will be lost after a power cycle, so you will
+        // need to set them each time you power up the sensor. They can be any value
+        // from 0.872 to 1.127 in increments of 0.001 (0.1%). It is recommended to
+        // first set both scalars to 1.0, then calibrate the angular scalar, then
+        // the linear scalar. To calibrate the angular scalar, spin the robot by
+        // multiple rotations (eg. 10) to get a precise error, then set the scalar
+        // to the inverse of the error. Remember that the angle wraps from -180 to
+        // 180 degrees, so for example, if after 10 rotations counterclockwise
+        // (positive rotation), the sensor reports -15 degrees, the required scalar
+        // would be 3600/3585 = 1.004. To calibrate the linear scalar, move the
+        // robot a known distance and measure the error; do this multiple times at
+        // multiple speeds to get an average, then set the linear scalar to the
+        // inverse of the error. For example, if you move the robot 100 inches and
+        // the sensor reports 103 inches, set the linear scalar to 100/103 = 0.971
+        myOtos.setLinearScalar(1.0);
+        myOtos.setAngularScalar(1.0);
+
+        // The IMU on the OTOS includes a gyroscope and accelerometer, which could
+        // have an offset. Note that as of firmware version 1.0, the calibration
+        // will be lost after a power cycle; the OTOS performs a quick calibration
+        // when it powers up, but it is recommended to perform a more thorough
+        // calibration at the start of all your OpModes. Note that the sensor must
+        // be completely stationary and flat during calibration! When calling
+        // calibrateImu(), you can specify the number of samples to take and whether
+        // to wait until the calibration is complete. If no parameters are provided,
+        // it will take 255 samples and wait until done; each sample takes about
+        // 2.4ms, so about 612ms total
+        myOtos.calibrateImu();
+
+        // Reset the tracking algorithm - this resets the position to the origin,
+        // but can also be used to recover from some rare tracking errors
+        myOtos.resetTracking();
+
+        // After resetting the tracking, the OTOS will report that the robot is at
+        // the origin. If your robot does not start at the origin, or you have
+        // another source of location information (eg. vision odometry), you can set
+        // the OTOS location to match and it will continue to track from there.
+        SparkFunOTOS.Pose2D currentPosition = new SparkFunOTOS.Pose2D(0, 0, 0);
+        myOtos.setPosition(currentPosition);
+
+        // Get the hardware and firmware version
+        SparkFunOTOS.Version hwVersion = new SparkFunOTOS.Version();
+        SparkFunOTOS.Version fwVersion = new SparkFunOTOS.Version();
+        myOtos.getVersionInfo(hwVersion, fwVersion);
+
+        telemetry.addLine("OTOS configured! Press start to get position data!");
+        telemetry.addLine();
+        telemetry.addLine(String.format("OTOS Hardware Version: v%d.%d", hwVersion.major, hwVersion.minor));
+        telemetry.addLine(String.format("OTOS Firmware Version: v%d.%d", fwVersion.major, fwVersion.minor));
+        telemetry.update();
+    }
+
+
 
 }
