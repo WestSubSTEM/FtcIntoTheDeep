@@ -45,7 +45,7 @@ public class QualifierNew extends OpMode
     double pincherPosition = STEMperFiConstants.PINCHER_CLOSE;
     double linkServoPosition = STEMperFiConstants.LINK_INIT;
     boolean iSpecimenMode = false;
-    boolean isClimbMode = true;
+    boolean isClimbMode = false;
 
     ButtonReader square2ButtonReader, triangle2ButtonReader, circle2ButtonReader, x2ButtonReader, dUp2ButtonReader, dDown2ButtonReader, dLeft2ButtonReader, dRight2ButtonReader, leftStick2ButtonReader, rightStick2ButtonReader, bumpLeft2ButtonReader, bumpRight2ButtonReader;
 
