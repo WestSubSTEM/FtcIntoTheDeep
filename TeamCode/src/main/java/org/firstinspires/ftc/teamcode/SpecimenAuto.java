@@ -24,9 +24,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
-@Autonomous(name="Sample Auto", group="Qual")
+@Autonomous(name="Specimen Auto", group="Qual")
 //@Disabled
-public class SampleAuto extends LinearOpMode {
+public class SpecimenAuto extends LinearOpMode {
     private static final boolean USE_WEBCAM = true;  // Set true to use a webcam, or false for a phone camera
     private static final int DESIRED_TAG_ID = -1;     // Choose the tag you want to approach or set to -1 for ANY tag.
     private VisionPortal visionPortal;               // Used to manage the video source.
@@ -49,24 +49,19 @@ public class SampleAuto extends LinearOpMode {
 
     GoBildaPinpointDriver odo; // Declare OpMode member for the Odometry Computer
     DriveToPoint nav = new DriveToPoint(this); //OpMode member for the point-to-point navigation class
+
     boolean isNav = true;
 
     enum StateMachine {
         WAITING_FOR_START,
         PULL_AWAY_FROM_WALL,
-        DRIVE_TO_TAG_IN_START,
-        DRIVE_TO_BASKET_START,
-        DRIVE_TO_TAG_OUT_START,
-        DRIVE_TO_SAMPLE_1,
-        DRIVE_TO_TAG_IN_1,
-        DRIVE_TO_BASKET_1,
-        DRIVE_TO_TAG_OUT_1,
-        DRIVE_TO_SAMPLE_2,
-        DRIVE_TO_TAG_IN_2,
-        DRIVE_TO_BASKET_2,
+        STRAFE_TO_SUB,
+        SCORE,
+        BACKUP_FROM_SUB,
         PRE_PARK,
         PARK,
-        END
+        END,
+        QUIT
     }
 
 
@@ -77,38 +72,19 @@ public class SampleAuto extends LinearOpMode {
     static final Pose2D TARGET_4 = new Pose2D(DistanceUnit.MM, 100, -2600/10, AngleUnit.DEGREES, 90);
     static final Pose2D TARGET_5 = new Pose2D(DistanceUnit.MM, 100, 0, AngleUnit.DEGREES, 0);
 */
-    static final Pose2D TARGET_0_WALL_BLUE = new Pose2D(DistanceUnit.INCH, 36, 60, AngleUnit.DEGREES, 0);
-    static final Pose2D TARGET_1_WALL_AWAY_BLUE = new Pose2D(DistanceUnit.INCH, 36, 39, AngleUnit.DEGREES, 0);
-    static final Pose2D TARGET_2_TAG_IN_START_BLUE = new Pose2D(DistanceUnit.INCH, 45, 39, AngleUnit.DEGREES, 0);
-    static final Pose2D TARGET_3_BASKET_START_BLUE = new Pose2D(DistanceUnit.INCH, 63.4025, 55.9483, AngleUnit.DEGREES, -25);
-    static final Pose2D TARGET_4_TAG_OUT_START_BLUE = TARGET_2_TAG_IN_START_BLUE;
-    // SAMPLE 1 POSITION !!!!!!!!!!!!!!!!!!!!!!!!
-    // BIGGER X CLOSER TO WALL, SMALLER X CLOSER TO SUB, BIGGER Y CLOSER TO DRIVERS, SMALLER Y CLOSER TO SUB
-    static final Pose2D TARGET_5_SAMPLE_1_BLUE = new Pose2D(DistanceUnit.INCH, 38.3, 24.75, AngleUnit.DEGREES, 0); // hmotor 304
-    static final Pose2D TARGET_6_TAG_IN_1_BLUE = TARGET_2_TAG_IN_START_BLUE;
-    static final Pose2D TARGET_7_BASKET_1_BLUE = TARGET_3_BASKET_START_BLUE;
-    static final Pose2D TARGET_8_TAG_OUT_1_BLUE = TARGET_2_TAG_IN_START_BLUE;
-    // SAMPLE 2 POSITION !!!!!!!!!!!!!!!!!!!!!!!!
-    static final Pose2D TARGET_9_SAMPLE_2_BLUE = new Pose2D(DistanceUnit.INCH, 48 , 24.5, AngleUnit.DEGREES, 0);
-    static final Pose2D TARGET_10_TAG_IN_2_BLUE = TARGET_2_TAG_IN_START_BLUE;
-    static final Pose2D TARGET_11_BASKET_2_BLUE = TARGET_3_BASKET_START_BLUE;
-//    static final Pose2D TARGET_12_TAG_OUT_2_BLUE = TARGET_2_TAG_IN_START_BLUE;
-//    static final Pose2D TARGET_13_SAMPLE_3_BLUE = new Pose2D(DistanceUnit.INCH, 37.8013 + 20, 24.5, AngleUnit.DEGREES, 0);
-//    static final Pose2D TARGET_14_TAG_IN_3_BLUE = TARGET_2_TAG_IN_START_BLUE;
-//    static final Pose2D TARGET_15_BASKET_3_BLUE = TARGET_3_BASKET_START_BLUE;
-//    static final Pose2D TARGET_16_TAG_OUT_3_BLUE = TARGET_2_TAG_IN_START_BLUE;
-    static final Pose2D TARGET_12_PRE_PARK_BLUE = new Pose2D(DistanceUnit.INCH, 40, 6.5, AngleUnit.DEGREES, -90);
-
-    static final Pose2D TARGET_13_PARK_BLUE = new Pose2D(DistanceUnit.INCH, 27, 6.5, AngleUnit.DEGREES, -90);
+    static final Pose2D TARGET_0_WALL_BLUE = new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0);
+    static final Pose2D TARGET_1_WALL_AWAY_BLUE = new Pose2D(DistanceUnit.INCH, -10, 24, AngleUnit.DEGREES, 0);
+    static final Pose2D TARGET_2_SUB_AWAY_BLUE = new Pose2D(DistanceUnit.INCH, -10, 12, AngleUnit.DEGREES, 0);
+    static final Pose2D TARGET_3_PRE_PARK = new Pose2D(DistanceUnit.INCH, 40, 12, AngleUnit.DEGREES, 90);
+    static final Pose2D TARGET_4_PARK = new Pose2D(DistanceUnit.INCH, 40, 12, AngleUnit.DEGREES, 90);
 
     static final Pose2D[] BLUE_TARGETS = {
             TARGET_0_WALL_BLUE,
             TARGET_1_WALL_AWAY_BLUE,
-            TARGET_2_TAG_IN_START_BLUE, TARGET_3_BASKET_START_BLUE, TARGET_4_TAG_OUT_START_BLUE,
-            TARGET_5_SAMPLE_1_BLUE, TARGET_6_TAG_IN_1_BLUE, TARGET_7_BASKET_1_BLUE, TARGET_8_TAG_OUT_1_BLUE,
-            TARGET_9_SAMPLE_2_BLUE, TARGET_10_TAG_IN_2_BLUE, TARGET_11_BASKET_2_BLUE,
-            //TARGET_13_SAMPLE_3_BLUE, TARGET_14_TAG_IN_3_BLUE, TARGET_15_BASKET_3_BLUE, TARGET_16_TAG_OUT_3_BLUE,
-            TARGET_12_PRE_PARK_BLUE, TARGET_13_PARK_BLUE};
+            TARGET_2_SUB_AWAY_BLUE,
+            TARGET_3_PRE_PARK,
+            TARGET_4_PARK
+    };
 
     Pose2D[] targets = BLUE_TARGETS;
     StateMachine stateMachine;
@@ -124,9 +100,13 @@ public class SampleAuto extends LinearOpMode {
         telemetry.addData("Y offset", odo.getYOffset());
         telemetry.addData("Device Version Number:", odo.getDeviceVersion());
         telemetry.addData("Device Scalar", odo.getYawScalar());
+        //odo.setPosition(TARGET_0_WALL_BLUE);
+        odo.update();
+        Pose2D pos = odo.getPosition();
+        String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.MM), pos.getY(DistanceUnit.MM), pos.getHeading(AngleUnit.DEGREES));
+        telemetry.addData("Position", data);
         telemetry.update();
 
-        odo.setPosition(targets[0]);
 
         // Wait for the game to start (driver presses START)
         ledServo.setPosition(STEMperFiConstants.GB_LED_GREEN);
@@ -141,122 +121,102 @@ public class SampleAuto extends LinearOpMode {
 //            getSample();
 //            stateMachine = StateMachine.END;
 //        }
-        while (opModeIsActive()) {
+        while (opModeIsActive() && stateMachine != StateMachine.QUIT) {
             odo.update();
+            pos = odo.getPosition();
+            data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.MM), pos.getY(DistanceUnit.MM), pos.getHeading(AngleUnit.DEGREES));
+            telemetry.addData("Position", data);
 
             switch (stateMachine){
                 case WAITING_FOR_START:
-                    odo.setPosition(targets[0]);
+                    //odo.setPosition(targets[0]);
                     //the first step in the autonomous
+                    ledServo.setPosition(STEMperFiConstants.GB_LED_SAGE);
                     setState(StateMachine.PULL_AWAY_FROM_WALL);
                     break;
                 case PULL_AWAY_FROM_WALL:
-                    if (nav.driveTo(odo.getPosition(), targets[1], .6, .1) || stateElapsedTime.time() > 1_000){
+                    ledServo.setPosition(STEMperFiConstants.GB_LED_ORANGE);
+                    if (nav.driveTo(odo.getPosition(), targets[1], .3, 1) || stateElapsedTime.time() > 2_000){
                         telemetry.addLine("at " + stateMachine);
-                        setState(StateMachine.DRIVE_TO_TAG_IN_START);
                         raiseBucket();
+                        setState(StateMachine.STRAFE_TO_SUB);
                     }
                     break;
-                case DRIVE_TO_TAG_IN_START:
-                    if (nav.driveTo(odo.getPosition(), targets[2], 0.6, .1) || stateElapsedTime.time() > 2_000){
-                        telemetry.addLine("at " + stateMachine);
-                        bucketServo.setPosition(STEMperFiConstants.BUCKET_AUTO_TO_SCORE);
-                        setState(StateMachine.DRIVE_TO_BASKET_START);
-                    }
-                    break;
-                case DRIVE_TO_BASKET_START:
-                    if(nav.driveTo(odo.getPosition(), targets[3], 0.6, .1) || stateElapsedTime.time() > 2_000){
-                        telemetry.addLine("at " + stateMachine);
+                case STRAFE_TO_SUB:
+                    ledServo.setPosition(STEMperFiConstants.GB_LED_INDIGO);
+                    isNav = false;
+                    double speed = .3;
+                    leftFrontDrive.setPower(-speed);
+                    rightFrontDrive.setPower(speed);
+                    leftBackDrive.setPower(speed);
+                    rightBackDrive.setPower(-speed);
+
+                    if (stateElapsedTime.time() > 2_000){
+                        speed = 0;
+                        leftFrontDrive.setPower(speed);
+                        rightFrontDrive.setPower(speed);
+                        leftBackDrive.setPower(speed);
+                        rightBackDrive.setPower(speed);
+                        ledServo.setPosition(STEMperFiConstants.GB_LED_RED);
                         score();
-                        setState(StateMachine.DRIVE_TO_TAG_OUT_START);
+                        telemetry.addLine("at " + stateMachine);
+                        setState(StateMachine.BACKUP_FROM_SUB);
                     }
                     break;
-                case DRIVE_TO_TAG_OUT_START:
-                    if (nav.driveTo(odo.getPosition(), targets[4], 0.6, .1) || stateElapsedTime.time() > 2_000){
+//                case SCORE:
+//                    ledServo.setPosition(STEMperFiConstants.GB_LED_RED);
+//                    if(nav.driveTo(odo.getPosition(), targets[3], 0.6, .1)){
+//                        telemetry.addLine("at " + stateMachine);
+//                        score();
+//                        setState(StateMachine.BACKUP_FROM_SUB);
+//                    }
+//                    break;
+                case BACKUP_FROM_SUB:
+                    isNav = true;
+                    ledServo.setPosition(STEMperFiConstants.GB_LED_YELLOW);
+                    if (nav.driveTo(odo.getPosition(), targets[2], 0.5, .1) || stateElapsedTime.time() > 2_000) {
                         telemetry.addLine("at " + stateMachine);
-                        lowerBasket();
-                        setState(StateMachine.DRIVE_TO_SAMPLE_1);
-                    }
-                    break;
-                case DRIVE_TO_SAMPLE_1:
-                     if(nav.driveTo(odo.getPosition(),targets[5],0.6, .1) || stateElapsedTime.time() > 2_000){
-                        telemetry.addLine("at " + stateMachine);
-                        getSample();
-                        raiseBucket();
-                        setState(StateMachine.DRIVE_TO_TAG_IN_1);
-                    }
-                    break;
-                case DRIVE_TO_TAG_IN_1:
-                    if(nav.driveTo(odo.getPosition(),targets[6],0.6,.1) || stateElapsedTime.time() > 2_000){
-                        telemetry.addLine("at " + stateMachine);
-                        bucketServo.setPosition(STEMperFiConstants.BUCKET_AUTO_TO_SCORE);
-                        setState(StateMachine.DRIVE_TO_BASKET_1);
-                    }
-                    break;
-                case DRIVE_TO_BASKET_1:
-                    if(nav.driveTo(odo.getPosition(),targets[7],0.6,.1) || stateElapsedTime.time() > 2_000){
-                        telemetry.addLine("at " + stateMachine);
-                        score();
-                        setState(StateMachine.DRIVE_TO_TAG_OUT_1);
-                    }
-                    break;
-                case DRIVE_TO_TAG_OUT_1:
-                    if(nav.driveTo(odo.getPosition(),targets[8],0.6,.1) || stateElapsedTime.time() > 2_000){
-                        telemetry.addLine("at " + stateMachine);
-                        lowerBasket();
-                        setState(StateMachine.DRIVE_TO_SAMPLE_2);
-                    }
-                    break;
-                case DRIVE_TO_SAMPLE_2:
-                    if(nav.driveTo(odo.getPosition(),targets[9],0.6,.1) || stateElapsedTime.time() > 2_000){
-                        telemetry.addLine("at " + stateMachine);
-                        getSample();
-                        raiseBucket();
-                        setState(StateMachine.DRIVE_TO_TAG_IN_2);
-                    }
-                    break;
-                case DRIVE_TO_TAG_IN_2:
-                    if(nav.driveTo(odo.getPosition(),targets[10],0.6,.1) || stateElapsedTime.time() > 2_000){
-                        telemetry.addLine("at " + stateMachine);
-                        bucketServo.setPosition(STEMperFiConstants.BUCKET_AUTO_TO_SCORE);
-                        setState(StateMachine.DRIVE_TO_BASKET_2);
-                    }
-                    break;
-                case DRIVE_TO_BASKET_2:
-                    if(nav.driveTo(odo.getPosition(),targets[11],0.6,.1) || stateElapsedTime.time() > 2_000){
-                        telemetry.addLine("at " + stateMachine);
-                        score();
+                        lowerBucket();
                         setState(StateMachine.PRE_PARK);
                     }
                     break;
                 case PRE_PARK:
-                    if(nav.driveTo(odo.getPosition(),targets[12],0.8,.1) || stateElapsedTime.time() > 4_000){
+                    ledServo.setPosition(STEMperFiConstants.GB_LED_VIOLET);
+                     if(nav.driveTo(odo.getPosition(),targets[3],0.6, .1) || stateElapsedTime.time() > 4_000) {
                         telemetry.addLine("at " + stateMachine);
+                        backToInit();
                         turnOffVerticalLift();
                         setState(StateMachine.PARK);
                     }
-                    if (stateElapsedTime.time() > 250) {
-                        lowerBasket();
-                        backToInit();
-                    }
                     break;
                 case PARK:
-                    if(nav.driveTo(odo.getPosition(),targets[13],0.5,.1) || stateElapsedTime.time() > 2_000){
-                        telemetry.addLine("at " + stateMachine);
-                        setState(StateMachine.END);
-                        hangServo.setPosition(STEMperFiConstants.LEVEL_ONE_HANG_HANG);
-                    }
-                    break;
-                case END:
-                    ledServo.setPosition(STEMperFiConstants.GB_LED_OFF);
+                    ledServo.setPosition(STEMperFiConstants.GB_LED_YELLOW);
                     isNav = false;
-                    double speed = .3;
+                    speed = .3;
                     leftFrontDrive.setPower(speed);
                     rightFrontDrive.setPower(-speed);
                     leftBackDrive.setPower(-speed);
                     rightBackDrive.setPower(speed);
-                    telemetry.addLine("at " + stateMachine);
+                    if(stateElapsedTime.time() > 4_000) {
+                        speed = 0;
+                        leftFrontDrive.setPower(speed);
+                        rightFrontDrive.setPower(speed);
+                        leftBackDrive.setPower(speed);
+                        rightBackDrive.setPower(speed);
+                        telemetry.addLine("at " + stateMachine);
+                        backToInit();
+                        turnOffVerticalLift();
+                        setState(StateMachine.END);
+                    }
                     break;
+                case END:
+                    ledServo.setPosition(STEMperFiConstants.GB_LED_WHITE);
+                    if( stateElapsedTime.time() > 1_000) {
+                        telemetry.addLine("at " + stateMachine);
+                        setState(StateMachine.QUIT);
+                    }
+                    break;
+
             }
 
 
@@ -267,15 +227,17 @@ public class SampleAuto extends LinearOpMode {
                 leftBackDrive.setPower(nav.getMotorPower(DriveToPoint.DriveMotor.LEFT_BACK));
                 rightBackDrive.setPower(nav.getMotorPower(DriveToPoint.DriveMotor.RIGHT_BACK));
             }
+
             telemetry.addData("current state:",stateMachine);
 
-            Pose2D pos = odo.getPosition();
-            String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.MM), pos.getY(DistanceUnit.MM), pos.getHeading(AngleUnit.DEGREES));
+            pos = odo.getPosition();
+            data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.MM), pos.getY(DistanceUnit.MM), pos.getHeading(AngleUnit.DEGREES));
             telemetry.addData("Position", data);
 
             telemetry.update();
 
         }
+        ledServo.setPosition(STEMperFiConstants.GB_LED_OFF);
     }
 
     private void setState(StateMachine newState) {
@@ -323,17 +285,18 @@ public class SampleAuto extends LinearOpMode {
     private void raiseBucket() {
         hMotor.setTargetPosition(STEMperFiConstants.H_SCORE);
         hMotor.setPower(1);
-        bucketServo.setPosition(STEMperFiConstants.BUCKET_INTAKE);
         vMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        vMotor.setTargetPosition(STEMperFiConstants.SCORE_BUCKET_SECOND);
+        vMotor.setTargetPosition(STEMperFiConstants.SCORE_BUCKET_SPECIMEN);
         vMotor.setPower(1);
         sleep(500);
     }
 
     private void score() {
-        bucketServo.setPosition(STEMperFiConstants.BUCKET_SCORE);
-        sleep(900);
-        bucketServo.setPosition(STEMperFiConstants.BUCKET_INTAKE);
+        vMotor.setTargetPosition(500);
+        vMotor.setPower(STEMperFiConstants.SCORE_BUCKET_DOWN_SPEED);
+        while(opModeIsActive() && vMotor.isBusy()) {
+            sleep(10);
+        }
     }
 
     private void backToInit() {
@@ -343,11 +306,9 @@ public class SampleAuto extends LinearOpMode {
         armServo.setPosition(STEMperFiConstants.ARM_INIT);
     }
 
-    private void lowerBasket() {
+    private void lowerBucket() {
         vMotor.setTargetPosition(0);
         vMotor.setPower(1);
-        pincherServo.setPosition(STEMperFiConstants.PINCHER_OPEN);
-        armServo.setPosition(STEMperFiConstants.ARM_AIM);
     }
 
     private void turnOffVerticalLift() {
