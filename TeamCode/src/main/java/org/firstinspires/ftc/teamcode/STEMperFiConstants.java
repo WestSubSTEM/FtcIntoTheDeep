@@ -25,6 +25,7 @@ public class STEMperFiConstants {
     };
 
     public static final double BUCKET_INIT = 0.7;
+    public static final double BUCKET_AUTO_TO_SCORE = 0.64;
     public static final double BUCKET_INTAKE = 0.62;
     public static final double BUCKET_SCORE = 0.58;
 
@@ -95,4 +96,9 @@ public class STEMperFiConstants {
 
     public static final int CLIMB_LEVEL_1 = 1795;
     public static final int CLIMB_MAX = 4547;
+
+    public static final double LEVEL_ONE_HANG_INIT = 0.81;
+    public static final double LEVEL_ONE_HANG_DRIVE = 0.53;
+    public static final double LEVEL_ONE_HANG_HANG = 0.4;
+
 }

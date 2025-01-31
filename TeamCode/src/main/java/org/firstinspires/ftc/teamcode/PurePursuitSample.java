@@ -12,7 +12,7 @@ import com.arcrobotics.ftclib.purepursuit.waypoints.GeneralWaypoint;
 import com.arcrobotics.ftclib.purepursuit.waypoints.StartWaypoint;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
-
+@Disabled
 @Autonomous(name="Pure Pursuit Test", group="FTC Lib")
 public class PurePursuitSample extends CommandOpMode {
     //

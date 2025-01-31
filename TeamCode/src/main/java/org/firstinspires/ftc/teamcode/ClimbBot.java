@@ -59,6 +59,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  */
 
 @TeleOp(name="Climb", group="FTC Lib")
+@Disabled
 public class ClimbBot extends OpMode
 {
     //GoBildaPinpointDriver odo; // Declare OpMode member for the Odometry Computer

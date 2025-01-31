@@ -2,14 +2,16 @@ package org.firstinspires.ftc.teamcode;
 
 import android.util.Size;
 
+import com.ThermalEquilibrium.homeostasis.Controllers.Feedback.BasicPID;
+import com.ThermalEquilibrium.homeostasis.Parameters.PIDCoefficients;
 import com.arcrobotics.ftclib.drivebase.MecanumDrive;
 import com.arcrobotics.ftclib.gamepad.ButtonReader;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.arcrobotics.ftclib.hardware.motors.Motor;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -23,7 +25,8 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
@@ -31,9 +34,19 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-@Autonomous(name="Auto Meet 3", group="FTC Lib")
-public class AutoSpecimen extends LinearOpMode
+@TeleOp(name="Auto PID", group="FTC Lib")
+@Disabled
+public class AutoPID extends LinearOpMode
 {
+
+    final double MM_PER_INCH = 25.4;
+    final double WEB_CAM_OFFSET_Y_INCHES = 17.0079 / 2;
+    final double WEB_CAM_OFFSET_X_INCHES = 7.55906 - 2.5;
+
+    final PIDCoefficients coefficients = new PIDCoefficients(.8,0,0);
+    final BasicPID controller = new BasicPID(coefficients);
+
+
     // april tag vars
     // Adjust these numbers to suit your robot.
     final double DESIRED_DISTANCE = 12; //  this is how close the camera should get to the target (inches)
@@ -92,9 +105,76 @@ public class AutoSpecimen extends LinearOpMode
         aprilTagInit();
         robotInit();
         while (opModeInInit()) {
-            odo.resetPosAndIMU();
-            sleep(250);
-            telemetry.addData(">", "Robot Heading = %4.0f", Math.toDegrees(odo.getHeading()));
+//            odo.resetPosAndIMU();
+//            sleep(250);
+            odo.update();
+            telemetry.addData(" >", "Robot Heading = %4.0f", Math.toDegrees(odo.getHeading()));
+            telemetry.addData(" >", "x = %f", odo.getPosX() / MM_PER_INCH);
+            telemetry.addData(" >", "y = %f", odo.getPosY() / MM_PER_INCH);
+            telemetry.addData(" >", "h = %f", Math.toDegrees(odo.getHeading()));
+
+            boolean targetFound = false;
+            List<AprilTagDetection> currentDetections = aprilTag.getDetections();
+            for (AprilTagDetection detection : currentDetections) {
+                // Look to see if we have size info on this tag.
+                if (detection.metadata != null) {
+                    telemetry.addData("tag x:", detection.ftcPose.x);
+                    telemetry.addData("tag y:", detection.ftcPose.y);
+                    telemetry.addData("tag range:", detection.ftcPose.range);
+                    telemetry.addData("tag bearing", detection.ftcPose.bearing);
+                    telemetry.addData("tag pose.x", detection.robotPose.getPosition().x);
+                    telemetry.addData("tag pose.y", detection.robotPose.getPosition().y);
+                    telemetry.addData("tag pose.INCH", detection.robotPose.getPosition().unit == DistanceUnit.INCH);
+                    telemetry.addData("tag pose.yaw", detection.robotPose.getOrientation().getYaw(AngleUnit.DEGREES));
+                    telemetry.addData("tag pose", detection.robotPose.toString());
+                    odo.setPosition(new Pose2D(DistanceUnit.INCH,
+                            detection.robotPose.getPosition().x - WEB_CAM_OFFSET_X_INCHES,
+                            detection.robotPose.getPosition().y - WEB_CAM_OFFSET_Y_INCHES,
+                             AngleUnit.DEGREES,
+                            detection.robotPose.getOrientation().getYaw(AngleUnit.DEGREES)));
+                    //  Check to see if we want to track towards this tag.
+                    if ((DESIRED_TAG_ID < 0) || (detection.id == DESIRED_TAG_ID)) {
+                        // Yes, we want to use this tag.
+                        targetFound = true;
+                        desiredTag = detection;
+                        break;  // don't look any further.
+                    } else {
+                        // This tag is in the library, but we do not want to track it right now.
+                        telemetry.addData("Skipping", "Tag ID %d is not desired", detection.id);
+                    }
+                } else {
+                    // This tag is NOT in the library, so we don't have enough information to track to it.
+                    telemetry.addData("Unknown", "Tag ID %d is not in TagLibrary", detection.id);
+                }
+            }
+
+            // Tell the driver what we see, and what to do.
+            if (targetFound) {
+                telemetry.addData("Found", "ID %d (%s)", desiredTag.id, desiredTag.metadata.name);
+                telemetry.addData("Range",  "%5.1f inches", desiredTag.ftcPose.range);
+                telemetry.addData("Bearing","%3.0f degrees", desiredTag.ftcPose.bearing);
+                telemetry.addData("Yaw","%3.0f degrees", desiredTag.ftcPose.yaw);
+            } else {
+                telemetry.addData("\n>","Tag Not Found\n");
+            }
+
+            // If Left Bumper is being pressed, AND we have found the desired target, Drive to target Automatically .
+
+            if (targetFound) {
+
+                // Determine heading, range and Yaw (tag image rotation) error so we can use them to control the robot automatically.
+                double  rangeError      = (desiredTag.ftcPose.range - DESIRED_DISTANCE);
+                double  headingError    = desiredTag.ftcPose.bearing;
+                double  yawError        = desiredTag.ftcPose.yaw;
+
+                // Use the speed and turn "gains" to calculate how we want the robot to move.
+                double drive  = Range.clip(rangeError * SPEED_GAIN, -MAX_AUTO_SPEED, MAX_AUTO_SPEED);
+                double turn   = Range.clip(headingError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN) ;
+                double strafe = Range.clip(-yawError * STRAFE_GAIN, -MAX_AUTO_STRAFE, MAX_AUTO_STRAFE);
+
+                telemetry.addData("Auto","Drive %5.2f, Strafe %5.2f, Turn %5.2f ", drive, strafe, turn);
+//                moveRobot(drive, strafe, turn);
+            }
             telemetry.update();
         }
 //        while (opModeIsActive()) {
@@ -117,7 +197,10 @@ public class AutoSpecimen extends LinearOpMode
 //            telemetry.update();
 //        }
 
-
+        moveToRelative(10_000, -10, 0, 0, .3, 0);
+        moveToRelative(10_000, 0, -10, 0, .3, 0);
+        sleep(10_000);
+        /*
         driveStraight(.3, 500, 0);
         vMotor.setTargetPosition(STEMperFiConstants.SCORE_BUCKET_SPECIMEN);
         vMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -144,15 +227,79 @@ public class AutoSpecimen extends LinearOpMode
         vMotor.setPower(0);
         turnToDegrees(.3, 75);
         strafeRightTime(0.4, 1_500);
-
+*/
 //        strafeLeft(.3, 200);
   //      strafeRight(.3, 200);
         // turnToDegrees(.2, -1.5708);
        // driveStraight(.2, -500, 0);
     }
-        /*
-     * Code to run ONCE when the driver hits INIT
-     */
+
+    private void moveToAbsolute(long timeoutMs, double xIn, double yIn, double hDeg, double drivePower, double turnPower) {
+        odo.update();
+        double xRel = xIn - (odo.getPosX() / MM_PER_INCH);
+        double yRel = yIn - (odo.getPosY() / MM_PER_INCH);
+        moveToRelative(timeoutMs, xRel, yRel, hDeg, drivePower, turnPower);
+    }
+
+    private void moveToRelative(long timeoutMs, double xIn, double yIn, double hDeg, double drivePower, double turnPower) {
+        long actualTimeoutMs = Now() + timeoutMs;
+        odo.update();
+        double targetX = odo.getPosX() + (xIn * MM_PER_INCH);
+        double targetY = odo.getPosY() + (yIn * MM_PER_INCH);
+        double targetH = Math.toDegrees(odo.getHeading()) + hDeg;
+        double xDelta, yDelta, hDelta = 0;
+        do {
+            xDelta = controller.calculate(targetX, odo.getPosX());
+//            telemetry.addData("targetX: ", targetX);
+//            telemetry.addData("currentX: ", odo.getPosX());
+//            telemetry.addData("xDelta: ", xDelta);
+//            telemetry.update();
+
+            yDelta = controller.calculate(targetY, odo.getPosY());
+            hDelta = controller.calculate(targetH, Math.toDegrees(odo.getHeading()));;
+            double botHeading = odo.getHeading();
+            double sinHeading = Math.sin(-botHeading);
+            double cosHeading = Math.cos(-botHeading);
+
+            // Rotate the movement direction counter to the bot's rotation
+            double rotX = -yDelta * cosHeading - xDelta * sinHeading;
+            double rotY = -yDelta * sinHeading + xDelta * cosHeading;
+
+            telemetry.addData("rotX", rotX);
+            telemetry.addData("rotY", rotY);
+
+            //rotX = rotX * 1.1;  // Counteract imperfect strafing
+
+            // Denominator is the largest motor power (absolute value) or 1
+            // This ensures all the powers maintain the same ratio,
+            // but only if at least one is out of the range [-1, 1]
+            double denominator = Math.max(Math.abs(rotY) + Math.abs(rotX) + Math.abs(hDelta), 1);
+            double frontLeftPower = -drivePower * (rotY + rotX - hDelta) / denominator;
+            double backLeftPower = -drivePower * (rotY - rotX - hDelta) / denominator;
+            double frontRightPower = drivePower * (rotY - rotX + hDelta) / denominator;
+            double backRightPower = drivePower * (rotY + rotX + hDelta) / denominator;
+            telemetry.addData("leftFrontDrive:", frontLeftPower);
+            telemetry.addData("leftBackDrive:", backLeftPower);
+            telemetry.addData("rightFrontDrive:", frontRightPower);
+            telemetry.addData("rightBackDrive:", backRightPower);
+
+            leftFrontDrive.setPower(frontLeftPower);
+            leftBackDrive.setPower(backLeftPower);
+            rightFrontDrive.setPower(frontRightPower);
+            rightBackDrive.setPower(backRightPower);
+
+            sleep(10);
+            odo.update();
+        } while(actualTimeoutMs > Now() && opModeIsActive() && (Math.abs(xDelta) > 10 || Math.abs(yDelta) > 10 || hDelta > 0.1));
+        leftFrontDrive.setPower(0);
+        leftBackDrive.setPower(0);
+        rightFrontDrive.setPower( 0);
+        rightBackDrive.setPower(0);
+    }
+
+    private long Now() {
+        return System.currentTimeMillis();
+    }
 
     public void aprilTagInit() {
         boolean targetFound     = false;    // Set to true when an AprilTag target is detected
@@ -227,7 +374,7 @@ public class AutoSpecimen extends LinearOpMode
      Manually set the camera gain and exposure.
      This can only be called AFTER calling initAprilTag(), and only works for Webcams;
     */
-    private void    setManualExposure(int exposureMS, int gain) {
+    private void setManualExposure(int exposureMS, int gain) {
         // Wait for the camera to be open, then use the controls
 
         if (visionPortal == null) {
@@ -361,6 +508,9 @@ public class AutoSpecimen extends LinearOpMode
 
 
     public void robotInit() {
+
+// usage of the PID
+
         gpA = new GamepadEx(gamepad1);
         gpB = new GamepadEx(gamepad2);
         customRumbleEffect = new Gamepad.RumbleEffect.Builder()
@@ -391,6 +541,11 @@ public class AutoSpecimen extends LinearOpMode
         armServo.setPosition(armServoPosition);
         pincherServo = hardwareMap.get(Servo.class, "intake");
         pincherServo.setPosition(pincherPosition);
+
+        leftFrontDrive = hardwareMap.get(DcMotor.class, "fl");
+        rightFrontDrive = hardwareMap.get(DcMotor.class, "fr");
+        leftBackDrive = hardwareMap.get(DcMotor.class, "bl");
+        rightBackDrive = hardwareMap.get(DcMotor.class, "br");
 
         Motor frontLeft = new Motor(hardwareMap, "fl", Motor.GoBILDA.RPM_312);
         Motor frontRight = new Motor(hardwareMap, "fr", Motor.GoBILDA.RPM_312);
@@ -827,6 +982,7 @@ public class AutoSpecimen extends LinearOpMode
             telemetry.addData("current y: ", odo.getPosY());
             telemetry.update();
         }
+
         mecanum.driveRobotCentric(0, 0, 0);
     }
 
