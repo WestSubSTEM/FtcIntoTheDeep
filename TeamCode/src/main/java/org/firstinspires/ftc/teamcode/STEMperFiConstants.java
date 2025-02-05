@@ -78,7 +78,7 @@ public class STEMperFiConstants {
     public static final int SCORE_BUCKET_FIRST = 1864; //  1788
     public static final int SCORE_BUCKET_SECOND = 3100; // 3030
     public static final int SCORE_BUCKET_SPECIMEN = 1280;
-    public static final double SCORE_BUCKET_DOWN_SPEED = 0.3;
+    public static final double SCORE_BUCKET_SPECIMEN_DOWN_SPEED = 0.3;
 
     public static final int H_SCORE = 171;
 
@@ -99,6 +99,6 @@ public class STEMperFiConstants {
 
     public static final double LEVEL_ONE_HANG_INIT = 0.81;
     public static final double LEVEL_ONE_HANG_DRIVE = 0.53;
-    public static final double LEVEL_ONE_HANG_HANG = 0.4;
+    public static final double LEVEL_ONE_HANG_HANG = 0.45;
 
 }

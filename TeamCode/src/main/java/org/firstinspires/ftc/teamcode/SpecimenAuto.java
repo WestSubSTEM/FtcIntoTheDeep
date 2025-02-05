@@ -72,11 +72,13 @@ public class SpecimenAuto extends LinearOpMode {
     static final Pose2D TARGET_4 = new Pose2D(DistanceUnit.MM, 100, -2600/10, AngleUnit.DEGREES, 90);
     static final Pose2D TARGET_5 = new Pose2D(DistanceUnit.MM, 100, 0, AngleUnit.DEGREES, 0);
 */
+    
     static final Pose2D TARGET_0_WALL_BLUE = new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0);
     static final Pose2D TARGET_1_WALL_AWAY_BLUE = new Pose2D(DistanceUnit.INCH, -10, 24, AngleUnit.DEGREES, 0);
-    static final Pose2D TARGET_2_SUB_AWAY_BLUE = new Pose2D(DistanceUnit.INCH, -10, 12, AngleUnit.DEGREES, 0);
-    static final Pose2D TARGET_3_PRE_PARK = new Pose2D(DistanceUnit.INCH, 40, 12, AngleUnit.DEGREES, 90);
-    static final Pose2D TARGET_4_PARK = new Pose2D(DistanceUnit.INCH, 40, 12, AngleUnit.DEGREES, 90);
+    // IF YOU NEED TO GET CLOSER TO HUMAN PLAYER WALL DECREASE 12 to a SMALLER NUMBER
+    static final Pose2D TARGET_2_SUB_AWAY_BLUE = new Pose2D(DistanceUnit.INCH, -10, 3, AngleUnit.DEGREES, 0);
+    static final Pose2D TARGET_3_PRE_PARK = new Pose2D(DistanceUnit.INCH, 40, 3, AngleUnit.DEGREES, 90);
+    static final Pose2D TARGET_4_PARK = new Pose2D(DistanceUnit.INCH, 40, 3, AngleUnit.DEGREES, 90);
 
     static final Pose2D[] BLUE_TARGETS = {
             TARGET_0_WALL_BLUE,
@@ -293,7 +295,7 @@ public class SpecimenAuto extends LinearOpMode {
 
     private void score() {
         vMotor.setTargetPosition(500);
-        vMotor.setPower(STEMperFiConstants.SCORE_BUCKET_DOWN_SPEED);
+        vMotor.setPower(STEMperFiConstants.SCORE_BUCKET_SPECIMEN_DOWN_SPEED);
         while(opModeIsActive() && vMotor.isBusy()) {
             sleep(10);
         }

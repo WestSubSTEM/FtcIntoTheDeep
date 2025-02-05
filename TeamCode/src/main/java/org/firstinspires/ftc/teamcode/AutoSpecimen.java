@@ -10,8 +10,6 @@ import com.arcrobotics.ftclib.hardware.motors.Motor;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Gamepad;
@@ -23,8 +21,6 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDir
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
@@ -135,7 +131,7 @@ public class AutoSpecimen extends LinearOpMode
         strafeLeftTime(.5, 1_500);
         vMotor.setTargetPosition(STEMperFiConstants.SCORE_BUCKET_SPECIMEN / 2);
         vMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        vMotor.setPower(STEMperFiConstants.SCORE_BUCKET_DOWN_SPEED);
+        vMotor.setPower(STEMperFiConstants.SCORE_BUCKET_SPECIMEN_DOWN_SPEED);
         sleep(4_000);
         strafeRight(.3, 200);
         vMotor.setTargetPosition(10);

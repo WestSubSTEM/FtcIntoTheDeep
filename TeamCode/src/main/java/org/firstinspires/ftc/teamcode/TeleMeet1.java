@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.arcrobotics.ftclib.command.button.GamepadButton;
 import com.arcrobotics.ftclib.drivebase.MecanumDrive;
 import com.arcrobotics.ftclib.gamepad.ButtonReader;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
@@ -345,7 +344,7 @@ public class TeleMeet1 extends OpMode
             if (bucketVerticalPosition > vMotor.getCurrentPosition()) {
                 vMotor.setPower(1);
             } else {
-                vMotor.setPower(STEMperFiConstants.SCORE_BUCKET_DOWN_SPEED);
+                vMotor.setPower(STEMperFiConstants.SCORE_BUCKET_SPECIMEN_DOWN_SPEED);
             }
         } else if (System.currentTimeMillis() - liftStartTime > STEMperFiConstants.LIFT_DELAY_MS) {
             vMotor.setTargetPosition(bucketVerticalPosition);
