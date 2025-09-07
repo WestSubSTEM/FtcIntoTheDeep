@@ -42,18 +42,29 @@ public class STEMperFiConstants {
     public static final double ARM_INIT = 0.33;
     public static final double ARM_INIT_SAMPLE = 0.33;
 
-    public static final double NEW_ARM_AIM = 0.47;
-    public static final double NEW_ARM_INTAKE = 0.49;
-    public static final double NEW_ARM_SCORE = 0.27;
-    public static final double NEW_ARM_DRIVE = 0.43;
+    public static final double NEW_ARM_AIM = 0.49;
+    public static final double NEW_ARM_INTAKE = 0.52;
+    public static final double NEW_ARM_SCORE = 0.28;
+    public static final double NEW_ARM_DRIVE = 0.4;
     public static final double NEW_ARM_WALL = 0.43;
-    public static final double NEW_ARM_INIT = 0.34;
-    public static final double NEW_ARM_INIT_SAMPLE = 0.34;
+    public static final double NEW_ARM_INIT = 0.33;
+    public static final double NEW_ARM_INIT_SAMPLE = 0.3;
 
 
 
     public static final double PINCHER_CLOSE = 0.95;
     public static final double PINCHER_OPEN = 0.5;
+
+
+    public static final double NEW_PINCHER_DRIVE = 0.6;
+    public static final double NEW_PINCHER_AIM = 0.85;
+    public static final double NEW_PINCHER_INTAKE = 0.25;
+    public static final double NEW_PINCHER_SCORE = 0.6;
+    public static final double NEW_PINCHER_INIT = 0.2;
+
+
+
+
 
     public static final double GB_LED_OFF = 0;
     public static final double GB_LED_RED = 0.28;
@@ -72,7 +83,7 @@ public class STEMperFiConstants {
 //    public static final double INTAKE_OUT = 0.5;
 
     public static final int NEW_SCORE_BUCKET_FIRST = 1788; //  1788
-    public static final int NEW_SCORE_BUCKET_SECOND = 2960; // 3030
+    public static final int NEW_SCORE_BUCKET_SECOND = 3040; // 3030
     public static final int NEW_SCORE_BUCKET_SPECIMEN = 1345;
 
     public static final int SCORE_BUCKET_FIRST = 1864; //  1788
@@ -86,8 +97,8 @@ public class STEMperFiConstants {
     public static final long ATTACK_DRIVE_ms = 1_000;
     public static final long LIFT_DELAY_MS = 500;
 
-    public static final double LINK_INIT = 0.72;
-    public static final double LINK_SCORE = 0.65;
+    public static final double LINK_INIT = 0.65;
+    public static final double LINK_SCORE = 0.68;
     public static final double LINK_OUT = 0.2;
     public static final double LINK_INCREMENT = 0.01;
 

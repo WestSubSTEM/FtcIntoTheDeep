@@ -17,9 +17,9 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-
-@TeleOp(name="Qual New", group="FTC Lib")
 @Disabled
+@TeleOp(name="Qual New", group="FTC Lib")
+
 public class QualifierNew extends OpMode
 {
     // Create an instance of the sensor
@@ -44,7 +44,7 @@ public class QualifierNew extends OpMode
     long climbTargetPosition = 0;
 
     Servo bucketServo, ledServo, armServo, pincherServo, linkServo;
-    double pincherPosition = STEMperFiConstants.PINCHER_CLOSE;
+    double pincherPosition = STEMperFiConstants.NEW_PINCHER_INTAKE;
     double linkServoPosition = STEMperFiConstants.LINK_INIT;
     boolean iSpecimenMode = false;
     boolean isClimbMode = false;
@@ -82,7 +82,7 @@ public class QualifierNew extends OpMode
         bumpRight2ButtonReader = new ButtonReader(gpB, GamepadKeys.Button.RIGHT_BUMPER);
 
         bucketServo = hardwareMap.get(Servo.class, "bucket");
-        bucketServo.setPosition(STEMperFiConstants.NEW_BUCKET_INIT);
+        //bucketServo.setPosition(STEMperFiConstants.NEW_BUCKET_INIT);\\
         ledServo = hardwareMap.get(Servo.class, "gbled");
         ledServo.setPosition(STEMperFiConstants.GB_LED_WHITE);
         armServo = hardwareMap.get(Servo.class, "arm");
@@ -153,6 +153,8 @@ public class QualifierNew extends OpMode
         runtime.reset();
         linkServoPosition = STEMperFiConstants.LINK_SCORE;
         linkServo.setPosition(linkServoPosition);
+
+        bucketServo.setPosition(STEMperFiConstants.NEW_BUCKET_INIT);
     }
 
     /*
@@ -225,7 +227,7 @@ public class QualifierNew extends OpMode
         if (dRight2ButtonReader.wasJustPressed() && !isClimbMode) {
             this.iSpecimenMode = !this.iSpecimenMode;
             if (this.iSpecimenMode) {
-                pincherPosition = STEMperFiConstants.PINCHER_CLOSE;
+                pincherPosition = STEMperFiConstants.NEW_PINCHER_INTAKE;
                 armServoPosition = STEMperFiConstants.NEW_ARM_INIT;
                 bucketServo.setPosition(STEMperFiConstants.NEW_BUCKET_INIT);
                 ledServo.setPosition(STEMperFiConstants.GB_LED_INDIGO);
@@ -238,7 +240,7 @@ public class QualifierNew extends OpMode
         if (iSpecimenMode) {
             if (triangle2ButtonReader.wasJustPressed()) {
                 attackStartTime = 0;
-                pincherPosition = STEMperFiConstants.PINCHER_OPEN;
+                pincherPosition = STEMperFiConstants.NEW_PINCHER_AIM;
                 armServoPosition = STEMperFiConstants.NEW_ARM_AIM;
                 ledServo.setPosition(STEMperFiConstants.GB_LED_RED);
             } else if (x2ButtonReader.wasJustPressed() || dLeft2ButtonReader.wasJustPressed()) {
@@ -257,7 +259,7 @@ public class QualifierNew extends OpMode
         } else {
             if (triangle2ButtonReader.wasJustPressed()) {
                 attackStartTime = 0;
-                pincherPosition = STEMperFiConstants.PINCHER_OPEN;
+                pincherPosition = STEMperFiConstants.NEW_PINCHER_AIM;
                 armServoPosition = STEMperFiConstants.NEW_ARM_AIM;
                 ledServo.setPosition(STEMperFiConstants.GB_LED_RED);
             } else if (x2ButtonReader.wasJustPressed()) {
@@ -282,16 +284,16 @@ public class QualifierNew extends OpMode
                 armServoPosition = STEMperFiConstants.NEW_ARM_DRIVE;
                 ledServo.setPosition(STEMperFiConstants.GB_LED_ORANGE);
                 armServo.setPosition(armServoPosition);
-            } else if (attackDuration > STEMperFiConstants.ATTACK_PINCHER_CLOSE_ms) {
-                pincherPosition = STEMperFiConstants.PINCHER_CLOSE;
+            } else if (attackDuration > STEMperFiConstants.NEW_PINCHER_INTAKE) {
+                pincherPosition = STEMperFiConstants.NEW_PINCHER_INTAKE;
                 armServo.setPosition(armServoPosition);
             }
         }
 
         if (gamepad2.left_bumper && attackStartTime == 0) {
-            pincherPosition = STEMperFiConstants.PINCHER_OPEN;
+            pincherPosition = STEMperFiConstants.NEW_PINCHER_AIM;
         } else if (gamepad2.right_bumper) {
-            pincherPosition = STEMperFiConstants.PINCHER_CLOSE;
+            pincherPosition = STEMperFiConstants.NEW_PINCHER_INTAKE;
         }
         pincherServo.setPosition(pincherPosition);
 
